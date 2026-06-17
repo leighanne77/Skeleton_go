@@ -49,14 +49,20 @@ def relevant(answer: str, query: str, threshold: float = 0.2) -> bool:
     return sum(1 for t in q if t in _terms(answer)) / len(q) >= threshold
 
 
+def _content_ngrams(text: str, n: int = 4) -> set[str]:
+    """n-grams over CONTENT words (stopwords dropped) — so a shared *phrase* counts,
+    not incidental shared vocabulary between unrelated documents."""
+    words = [w for w in _WORD.findall(text.lower()) if w not in _STOP and len(w) >= 3]
+    return {" ".join(words[i : i + n]) for i in range(len(words) - n + 1)}
+
+
 def conflicting(texts: list[str]) -> bool:
-    """Two sources are contradictory if they share substantial subject terms but
-    disagree on polarity. High shared-term bar to avoid false positives on normal
-    retrieval (a heuristic stand-in for the NLI-contradiction tier)."""
+    """Two sources contradict iff they share a multi-word content PHRASE but one
+    negates it (a precise stand-in for the NLI-contradiction tier — incidental term
+    overlap between unrelated docs does NOT trip it)."""
     for i in range(len(texts)):
         for j in range(i + 1, len(texts)):
-            shared = _terms(texts[i]) & _terms(texts[j])
-            if len(shared) >= 8 and (
+            if _content_ngrams(texts[i]) & _content_ngrams(texts[j]) and (
                 bool(_NEG.search(texts[i])) != bool(_NEG.search(texts[j]))
             ):
                 return True

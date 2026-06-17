@@ -11,9 +11,10 @@ routes to `withhold` and the synthesizer is **structurally unreachable** (the
 invariant in `test_synthesizer_unreachable_on_fail`). Retrieval is a tool, not the
 spine; the market-data tool runs alongside it.
 
-T3 wiring: real retriever (keyword, entitlement-filtered) + real market-data tool +
-stub deterministic-floor gate. T4/T6 swap the retriever (Chroma) and the gate (full
-cascade) behind these same nodes — the topology does not change.
+Wired: entitlement-filtered retriever (T4: OpenAI embeddings + Chroma, keyword
+fallback) · market-data tool (T4b) · guard-first PII/injection screen (T5) · the full
+control-plane gate (T6: floor → support → rubric) · a tamper-evident hash-chained
+audit trail (T9). The topology is fixed; backends swap behind the nodes.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from langgraph.graph import END, StateGraph
 
 from app import guardrails
 from app.agents import retriever, synthesizer
+from app.audit import AuditChain
 from app.eval import gate as gate_mod
 from app.models import (
     AgentState,
@@ -125,6 +127,38 @@ def _final_state(raw: object) -> AgentState:
     return AgentState(**raw)  # type: ignore[arg-type]
 
 
+def _audit_chain(state: AgentState) -> AuditChain:
+    """A real tamper-evident audit trail for this run (deterministic seq timestamps)."""
+    ch = AuditChain()
+
+    def ts(i: int) -> str:
+        return f"2026-06-17T00:00:{i:02d}Z"
+
+    top = state.retrieved[0].source_id if state.retrieved else None
+    ch.append(
+        "retrieval",
+        {"chunks": len(state.retrieved), "top": top},
+        ts(0),
+        state.request.principal.entitlements,
+    )
+    if state.guardrails is not None:
+        ch.append(
+            "guardrail",
+            {
+                "injection": state.guardrails.injection_detected,
+                "actions": len(state.guardrails.actions),
+            },
+            ts(1),
+        )
+    if state.gate_results:
+        gr = state.gate_results[-1]
+        ch.append("gate", {"stage": gr.stage.value, "passed": gr.passed}, ts(2))
+    ch.append(
+        "decision", {"verdict": state.verdict.value if state.verdict else None}, ts(3)
+    )
+    return ch
+
+
 def _trace(state: AgentState, route: str | None) -> RunTrace:
     delivered = state.verdict == Verdict.DELIVERED
     top = state.retrieved[0] if state.retrieved else None
@@ -175,7 +209,10 @@ def _trace(state: AgentState, route: str | None) -> RunTrace:
         },
         verdict=state.verdict,
         route=None if delivered else "human:compliance-officer",
-        audit_rows=[AuditRow(n=i, hash=f"{i:04x}…") for i in range(1, 4)],
+        audit_rows=[
+            AuditRow(n=r.seq, hash=f"{r.hash[:6]}…")
+            for r in _audit_chain(state).records
+        ],
     )
 
 
