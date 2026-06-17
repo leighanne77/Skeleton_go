@@ -122,9 +122,10 @@ def render_advisor() -> None:
         placeholder="Type your own question — e.g. Summarize MRB's latest 10-K liquidity risk",
         key="q",
     )
+    quick_none = "— none —"
     quick = ic.selectbox(
         "…or run a demo scenario (synthetic MRB filings + governance shots)",
-        [lbl for lbl, _ in stub_backend.PRESETS],
+        [quick_none] + [lbl for lbl, _ in stub_backend.PRESETS],
         key="quick",
     )
     ticker_none = "— none —"
@@ -151,15 +152,22 @@ def render_advisor() -> None:
     )
 
     if run:
+        query = None
         if typed.strip():
             query = typed.strip()
         elif picked != ticker_none:
             query = f"Pull the latest quote for ({picked.split(' · ')[0]})."
-        else:
+        elif quick != quick_none:
             query = dict(stub_backend.PRESETS)[quick]
-        with st.spinner("Pulling the quote and recent SEC filings…"):
-            env, trace, scenario = _run(query, st.session_state.get("entitlements", []))
-        st.session_state.result = (env, trace, query, scenario)
+
+        if query is None:
+            st.warning("Type a question, pick a live stock, or choose a demo scenario.")
+        else:
+            with st.spinner("Pulling the quote and recent SEC filings…"):
+                env, trace, scenario = _run(
+                    query, st.session_state.get("entitlements", [])
+                )
+            st.session_state.result = (env, trace, query, scenario)
 
     result = st.session_state.get("result")
     if not result:

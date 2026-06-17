@@ -40,7 +40,8 @@ def test_welcome_screen_then_enter() -> None:
 
 def test_delivered_state_renders() -> None:
     at = _enter(AppTest.from_file(APP).run())
-    at.button(key="run_advisor").click().run()  # default quick task = MRB 10-K briefing
+    at.text_input(key="q").set_value("Summarize MRB's latest 10-K liquidity risk").run()
+    at.button(key="run_advisor").click().run()
     assert not at.exception
     md = _md(at)
     assert "DELIVERED" in md
@@ -63,6 +64,7 @@ def test_routed_state_renders() -> None:
 
 def test_gear_opens_show_my_work() -> None:
     at = _enter(AppTest.from_file(APP).run())
+    at.text_input(key="q").set_value("Summarize MRB's latest 10-K liquidity risk").run()
     at.button(key="run_advisor").click().run()
     at.button(key="audit_gear").click().run()  # the gear
     assert not at.exception
