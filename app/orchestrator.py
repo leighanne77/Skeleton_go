@@ -23,6 +23,7 @@ from typing import Any
 
 from langgraph.graph import END, StateGraph
 
+from app import guardrails
 from app.agents import retriever, synthesizer
 from app.eval import gate as gate_mod
 from app.models import (
@@ -70,7 +71,9 @@ def n_specialist(state: AgentState) -> dict[str, object]:
     if not state.retrieved:
         return {}
     answer, claims = synthesizer.make_candidate(state.retrieved)
-    return {"candidate_answer": answer, "claims": claims}
+    # guard-first: PII-screen the draft + flag any injection in the retrieved spans
+    clean, gr = guardrails.screen(answer, state.request.policy_pack)
+    return {"candidate_answer": clean, "claims": claims, "guardrails": gr}
 
 
 def n_gate(state: AgentState) -> dict[str, object]:
