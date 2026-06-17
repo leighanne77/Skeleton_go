@@ -64,7 +64,7 @@ def test_routed_state_renders() -> None:
 def test_gear_opens_show_my_work() -> None:
     at = _enter(AppTest.from_file(APP).run())
     at.button(key="run_advisor").click().run()
-    at.button(key="to_operator").click().run()  # the gear
+    at.button(key="audit_gear").click().run()  # the gear
     assert not at.exception
     assert any("Show my work" in m.value for m in at.markdown)
     assert len(at.code) >= 2  # entitlement decision + audit chain blocks
@@ -77,7 +77,7 @@ def test_entitlement_flip_on_operator() -> None:
     at.button(key="run_advisor").click().run()
     assert "ROUTED" in _md(at)
     # open Show my work, grant the clearance, re-run the same query → delivers
-    at.button(key="to_operator").click().run()
+    at.button(key="audit_gear").click().run()
     at.multiselect(key="op_entitlements").set_value(["mnpi_cleared"]).run()
     at.button(key="rerun_op").click().run()
     assert not at.exception

@@ -166,16 +166,6 @@ def render_advisor() -> None:
         env, _trace, _query, _scenario = result
         _render_answer(env)
 
-    # ⚙ glass-box affordance — bottom of the surface, large icon only (no label)
-    st.markdown("<div style='height:34px'></div>", unsafe_allow_html=True)
-    _, gear = st.columns([9, 1])
-    with gear:
-        if st.button(
-            "⚙", key="to_operator", help="Show my work — open the operator glass box"
-        ):
-            st.session_state.surface = "operator"
-            st.rerun()
-
 
 def _render_answer(env: AnswerEnvelope) -> None:
     theme.verdict_banner(env.status)
@@ -222,7 +212,7 @@ def _render_answer(env: AnswerEnvelope) -> None:
                 "- A failed / uncertain / out-of-bounds answer is **structurally unable** to be delivered\n"
                 "- It was routed to a human reviewer and the decision was **audited**"
             )
-    ac, gc = st.columns([11, 1])
+    ac, gc = st.columns([9, 2], vertical_alignment="center")
     ac.caption(
         f"Audit reference `{env.audit_ref}` · tamper-evident chain in Show my work →"
     )
