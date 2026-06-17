@@ -28,6 +28,7 @@ from app.models import (
     RunTrace,
     Verdict,
 )
+from app.tools.market_data import MarketDataTool
 
 # Fixed topology for the BFSI stock-briefing demo (recolored post-run, never animated).
 FIXED_TOPOLOGY = [
@@ -66,6 +67,10 @@ PRESETS: list[tuple[str, str]] = [
     (
         "🔒 Project Atlas pre-announcement deal terms",
         "What are the Project Atlas pre-announcement deal terms?",
+    ),
+    (
+        "🟢 Live quote — Microsoft (MSFT)",
+        "Pull the latest quote for Microsoft (MSFT).",
     ),
 ]
 
@@ -370,11 +375,67 @@ def _mnpi(entitlements: list[str]) -> tuple[AnswerEnvelope, RunTrace]:
     )
 
 
+# ── MSFT live-quote example (ticker-agnostic tool; MSFT is the worked example) ─
+def _msft_quote() -> tuple[AnswerEnvelope, RunTrace]:
+    quote = MarketDataTool().try_quote("MSFT")
+    if quote is None:  # fixture always has MSFT, but stay safe
+        return _out_of_scope()
+    live = quote.grade == "delayed_eod"
+    src = "live delayed quote (Alpha Vantage)" if live else "offline fixture snapshot"
+    answer = (
+        f"Latest available quote for Microsoft (MSFT, {quote.exchange or 'NASDAQ'}), shown "
+        f"as-of {quote.as_of} and clearly labeled. SEC-filing summaries for MSFT aren't in "
+        "this demo corpus — in production the same governed pipeline summarizes the issuer's "
+        "10-K / 10-Q / 8-K with citations, exactly as it does for the worked example issuer. "
+        "MSFT is just the example here; the market-data tool is ticker-agnostic."
+    )
+    env = AnswerEnvelope(
+        status=Verdict.DELIVERED,
+        answer_text=answer,
+        citations=[],
+        withhold_reason=[],
+        audit_ref="audit:#112",
+        quote=quote,
+    )
+    trace = RunTrace(
+        nodes=_nodes(
+            {
+                "retriever": (NodeStatus.SKIPPED, "no MSFT filings in demo corpus"),
+                "market_data": (NodeStatus.DONE, f"MSFT quote — {src}"),
+                "specialist": (NodeStatus.SKIPPED, "quote-only briefing"),
+            }
+        ),
+        gate_stages=[
+            GateStageTrace(
+                name="deterministic_floor",
+                passed=True,
+                detail="quote labeled as-of ✓ · no uncited filing claims ✓",
+            ),
+            GateStageTrace(
+                name="no_realtime_quote",
+                passed=True,
+                detail="informational as-of quote · not execution-grade ✓",
+            ),
+        ],
+        entitlement_decision={"filtered": [], "principal": []},
+        verdict=Verdict.DELIVERED,
+        route=None,
+        audit_rows=[
+            AuditRow(n=110, hash="a1b2…"),
+            AuditRow(n=111, hash="c3d4…"),
+            AuditRow(n=112, hash="e5f6…"),
+        ],
+    )
+    return env, trace
+
+
 # ── resolver ──────────────────────────────────────────────────────────────────
 def _resolve(query: str) -> str:
     q = query.lower()
     if "project atlas" in q or "deal terms" in q or "mnpi" in q:
         return "mnpi"
+    if "msft" in q or "microsoft" in q:
+        return "msft_quote"
     if any(
         k in q
         for k in (
@@ -424,6 +485,8 @@ def run(query: str, entitlements: list[str]) -> tuple[AnswerEnvelope, RunTrace, 
     scenario = _resolve(query)
     if scenario == "mnpi":
         env, trace = _mnpi(entitlements)
+    elif scenario == "msft_quote":
+        env, trace = _msft_quote()
     elif scenario == "realtime_quote":
         env, trace = _realtime_quote()
     elif scenario == "advice":

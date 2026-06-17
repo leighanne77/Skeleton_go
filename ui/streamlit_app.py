@@ -96,21 +96,13 @@ def _dot(trace: RunTrace) -> str:
 def render_advisor() -> None:
     theme.header_band(ADVISOR_IDENTITY)
 
-    left, right = st.columns([8, 2])
-    with left:
-        st.markdown("# Stock Briefing")
-        st.markdown(
-            '<p class="nw-hero-sub">Get up to speed on a stock in minutes — '
-            "a time-stamped quote and the key points from recent SEC filings, "
-            "every fact linked to its source.</p>",
-            unsafe_allow_html=True,
-        )
-    with right:
-        st.write("")
-        if st.button("⚙  Show my work", key="to_operator"):
-            st.session_state.surface = "operator"
-            st.rerun()
-
+    st.markdown("# Stock Briefing")
+    st.markdown(
+        '<p class="nw-hero-sub">Get up to speed on a stock in minutes — '
+        "a time-stamped quote and the key points from recent SEC filings, "
+        "every fact linked to its source.</p>",
+        unsafe_allow_html=True,
+    )
     st.divider()
 
     ic, bc = st.columns([5, 2])
@@ -126,8 +118,9 @@ def render_advisor() -> None:
         label_visibility="collapsed",
         key="quick",
     )
-    bc.write("")
-    run = bc.button("Run briefing  ›", type="primary", key="run_advisor")
+    run = bc.button(
+        "Run briefing  ›", type="primary", width="stretch", key="run_advisor"
+    )
 
     if run:
         query = typed.strip() or dict(stub_backend.PRESETS)[quick]
@@ -144,10 +137,19 @@ def render_advisor() -> None:
             "citations, or routed for human review. Never a confident guess.",
             icon="📊",
         )
-        return
+    else:
+        env, _trace, _query, _scenario = result
+        _render_answer(env)
 
-    env, _trace, _query, _scenario = result
-    _render_answer(env)
+    # ⚙ glass-box affordance — bottom of the surface, large icon only (no label)
+    st.markdown("<div style='height:34px'></div>", unsafe_allow_html=True)
+    _, gear = st.columns([9, 1])
+    with gear:
+        if st.button(
+            "⚙", key="to_operator", help="Show my work — open the operator glass box"
+        ):
+            st.session_state.surface = "operator"
+            st.rerun()
 
 
 def _render_answer(env: AnswerEnvelope) -> None:
@@ -271,6 +273,32 @@ def render_operator() -> None:
     st.code(f"{chain}     verify ✓", language="text")
 
 
+# ── WELCOME screen ────────────────────────────────────────────────────────────
+def render_welcome() -> None:
+    theme.header_band(ADVISOR_IDENTITY)
+    st.markdown(
+        """
+        <div class="nw-welcome">
+          <h2>📊 Stock Briefing</h2>
+          <p class="lead">Get up to speed on a stock in minutes — before a client conversation.</p>
+          <p>📈 <b>Time-stamped quote</b> &nbsp;·&nbsp; 📄 <b>key points from recent SEC filings</b>
+          &nbsp;·&nbsp; 🔗 <b>every fact linked to its source</b>.</p>
+          <p>✅ Delivered with citations, or ⤴ routed for human review — never a guess. &nbsp;
+          🛡️ No advice, no non-public info, no stale price as live. &nbsp; 🧾 Every decision audited.</p>
+          <p class="lead">Useful for you. Defensible for compliance.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    _, mid, _ = st.columns([2, 3, 2])
+    with mid:
+        if st.button(
+            "Enter the Stock Briefing  ›", type="primary", width="stretch", key="enter"
+        ):
+            st.session_state.entered = True
+            st.rerun()
+
+
 # ── app ───────────────────────────────────────────────────────────────────────
 def main() -> None:
     st.set_page_config(
@@ -278,11 +306,14 @@ def main() -> None:
     )
     theme.inject_css()
     ss = st.session_state
+    ss.setdefault("entered", False)
     ss.setdefault("surface", "advisor")
     ss.setdefault("entitlements", [])
     ss.setdefault("result", None)
 
-    if ss.surface == "operator":
+    if not ss.entered:
+        render_welcome()
+    elif ss.surface == "operator":
         render_operator()
     else:
         render_advisor()

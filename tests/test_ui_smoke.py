@@ -1,9 +1,10 @@
-"""tests/test_ui_smoke.py — UI acceptance: the two surfaces render and the gate
-states + entitlement flip are visible.
+"""tests/test_ui_smoke.py — UI acceptance: welcome gate, the two surfaces, the gate
+states, and the entitlement flip all render.
 
-Munich-Re-styled build: verdict banners are branded HTML (st.markdown), the
-advisor and "Show my work" surfaces are switched by session-state via the gear /
-back buttons, and the entitlement toggle lives on the operator surface.
+Munich-Re-styled build: the app opens on a welcome screen (dismissed by "Enter the
+Stock Briefing"); verdict banners are branded HTML (st.markdown); the advisor and
+"Show my work" surfaces are switched by session-state via the gear / back buttons;
+the entitlement toggle lives on the operator surface.
 
 Uses Streamlit's AppTest (no browser) against the stub backend. Replaced/extended
 when the real graph lands at T3+.
@@ -22,14 +23,23 @@ def _md(at: AppTest) -> str:
     return " || ".join(m.value for m in at.markdown if "<style>" not in m.value)
 
 
-def test_app_boots_clean() -> None:
+def _enter(at: AppTest) -> AppTest:
+    """Dismiss the welcome screen → land on the advisor surface."""
+    at.button(key="enter").click().run()
+    return at
+
+
+def test_welcome_screen_then_enter() -> None:
     at = AppTest.from_file(APP).run()
     assert not at.exception
-    assert any("Stock Briefing" in m.value for m in at.markdown)
+    assert "Defensible for compliance" in _md(at)  # welcome copy is up
+    _enter(at)
+    assert not at.exception
+    assert at.button(key="run_advisor")  # landed on the advisor surface
 
 
 def test_delivered_state_renders() -> None:
-    at = AppTest.from_file(APP).run()
+    at = _enter(AppTest.from_file(APP).run())
     at.button(key="run_advisor").click().run()  # default quick task = MRB 10-K briefing
     assert not at.exception
     md = _md(at)
@@ -39,7 +49,7 @@ def test_delivered_state_renders() -> None:
 
 
 def test_routed_state_renders() -> None:
-    at = AppTest.from_file(APP).run()
+    at = _enter(AppTest.from_file(APP).run())
     at.text_input(key="q").set_value(
         "give me the live execution price right now to place a trade"
     ).run()
@@ -52,7 +62,7 @@ def test_routed_state_renders() -> None:
 
 
 def test_gear_opens_show_my_work() -> None:
-    at = AppTest.from_file(APP).run()
+    at = _enter(AppTest.from_file(APP).run())
     at.button(key="run_advisor").click().run()
     at.button(key="to_operator").click().run()  # the gear
     assert not at.exception
@@ -61,7 +71,7 @@ def test_gear_opens_show_my_work() -> None:
 
 
 def test_entitlement_flip_on_operator() -> None:
-    at = AppTest.from_file(APP).run()
+    at = _enter(AppTest.from_file(APP).run())
     # unentitled MNPI ask → routed
     at.text_input(key="q").set_value("What are the Project Atlas deal terms?").run()
     at.button(key="run_advisor").click().run()

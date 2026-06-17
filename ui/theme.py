@@ -77,6 +77,18 @@ def inject_css() -> None:
           /* ── hero ───────────────────────────────────────────────────────── */
           .nw-hero-sub {{ color: {p["muted"]}; font-size: 1.02rem; margin-top: -.4rem; }}
 
+          /* ── welcome card ───────────────────────────────────────────────── */
+          .nw-welcome {{
+            border: 1px solid {p["hairline"]}; border-top: 4px solid {p["turquoise"]};
+            border-radius: 8px; padding: 30px 34px; background: {p["canvas"]};
+            box-shadow: 0 2px 10px #0a224012; margin: 14px 0 18px 0;
+          }}
+          .nw-welcome h2 {{ margin-top: 0; font-weight: 300; font-size: 1.9rem; }}
+          .nw-welcome p {{ color: {p["slate"]}; font-size: 1.04rem; line-height: 1.6; }}
+          .nw-welcome .lead {{ color: {p["muted"]}; }}
+          .nw-welcome ul {{ color: {p["slate"]}; line-height: 1.7; }}
+          .nw-welcome b {{ color: {p["navy"]}; }}
+
           /* ── verdict banners ────────────────────────────────────────────── */
           .nw-verdict {{
             border-radius: 6px; padding: 14px 18px; margin: 6px 0 4px 0;
@@ -105,18 +117,24 @@ def inject_css() -> None:
             border-radius: 6px; margin-bottom: 8px;
           }}
 
-          /* ── buttons: flat navy with a touch of weight ──────────────────── */
+          /* ── buttons: flat navy, WHITE label (override the global dark text) ─ */
           .stButton > button {{
-            background: {p["navy"]}; color: #fff; border: 0; border-radius: 4px;
+            background: {p["navy"]} !important; border: 0; border-radius: 4px;
             font-weight: 600; padding: .5rem 1.1rem;
           }}
-          .stButton > button:hover {{ background: {p["blue"]}; color: #fff; }}
+          /* the label text lives in inner <p>/<span>/<div> — force them white too */
+          .stButton > button, .stButton > button * {{ color: #ffffff !important; fill: #ffffff !important; }}
+          .stButton > button:hover {{ background: {p["blue"]} !important; }}
+          .stButton > button:hover, .stButton > button:hover * {{ color: #ffffff !important; }}
 
-          /* gear / nav buttons: borderless, subtle */
-          .nw-ghost .stButton > button {{
-            background: transparent; color: {p["navy"]}; border: 1px solid {p["hairline"]};
+          /* ⚙ gear button (key="to_operator"): large, icon-only, ghost (not navy) */
+          .st-key-to_operator button {{
+            background: transparent !important; border: 1px solid {p["hairline"]} !important;
+            font-size: 1.9rem !important; line-height: 1; padding: .1rem .5rem !important;
+            border-radius: 8px;
           }}
-          .nw-ghost .stButton > button:hover {{ background: {p["section"]}; color: {p["navy"]}; }}
+          .st-key-to_operator button:hover {{ background: {p["section"]} !important; }}
+          .st-key-to_operator button * {{ color: {p["navy"]} !important; }}
 
           /* section divider */
           hr {{ border-color: {p["hairline"]}; }}

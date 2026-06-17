@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     use_real_llm: bool = False
     use_real_embed: bool = False
     use_real_market_data: bool = False
+    market_data_provider: str = (
+        "alpha_vantage"  # live adapter when use_real_market_data
+    )
 
     # ── reasoning LLM ─────────────────────────────────────────────────────────
     llm_provider: str = "anthropic"

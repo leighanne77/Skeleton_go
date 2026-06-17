@@ -20,6 +20,23 @@
       "as_of": "2026-06-16T20:00:00Z",
       "delay_minutes": 15,
       "label": "Delayed snapshot (as-of close 2026-06-16). Not a live execution price."
+    },
+    "MSFT": {
+      "symbol": "MSFT",
+      "name": "Microsoft Corporation",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "last": 494.82,
+      "change": 3.11,
+      "change_pct": 0.63,
+      "prev_close": 491.71,
+      "day_high": 497.05,
+      "day_low": 490.10,
+      "volume": 18420000,
+      "market_cap": 3680000000000,
+      "as_of": "2026-06-16T20:00:00Z",
+      "delay_minutes": 15,
+      "label": "Offline fixture snapshot (as-of close 2026-06-16). Set USE_REAL_MARKET_DATA=true + a key for a live delayed quote. Not a live execution price."
     }
   }
 }
