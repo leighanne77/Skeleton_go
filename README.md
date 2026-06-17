@@ -97,6 +97,8 @@ agent is denied read access to `.env`; `.env.example` is the committed contract.
 | `OPENAI_API_KEY` + `USE_REAL_EMBED=true` | Real retrieval — **OpenAI `text-embedding-3-small`** + Chroma (else deterministic keyword fallback) |
 | `MARKET_DATA_API_KEY` + `USE_REAL_MARKET_DATA=true` | Live quotes (else offline fixture) |
 | `MARKET_DATA_PROVIDER` | `finnhub` (free **real-time** US quotes) or `alpha_vantage` (free **delayed EOD**; intraday is premium) |
+| `USE_REAL_MARKET_DATA=true` (no key) | also enables the **SEC EDGAR** filings pull (free, US-gov) for live tickers |
+| `USE_PRESIDIO_NER=true` | name/address PII redaction via **Presidio + spaCy** (`python -m spacy download en_core_web_sm`); regex PII always on |
 | `ANTHROPIC_API_KEY` + `USE_REAL_LLM=true` | Real reasoning LLM (Claude); cross-family judge on OpenAI |
 
 > **Live prices:** free key at finnhub.io → `MARKET_DATA_PROVIDER=finnhub`,
@@ -113,13 +115,20 @@ app/
   config.py        typed config from .env (keyless-by-default)
   policy.py        the ONE seam over load_pack (policy = data)
   orchestrator.py  the LangGraph supervisor graph (rubric item 1)
+  guardrails.py    guard-first: regex + Presidio NER PII · injection · prohibited/entitlement
+  memory.py        deliberate memory policy (session/working on; cross-session OFF)
+  audit.py         append-only, hash-chained, verifiable audit log
   agents/
     retriever.py   retrieval-as-a-tool: OpenAI embeddings + Chroma / keyword fallback
     embeddings.py  the embedding-model seam (text-embedding-3-small)
-    synthesizer.py specialist (draft) + synthesizer (finalize, pass-edge only)
-  eval/gate.py     the control-plane gate (deterministic floor; full cascade WIP)
+    synthesizer.py specialist (top-K cited spans) + synthesizer (finalize, pass-edge only)
+  eval/
+    gate.py        the control-plane gate (floor → stage-2 support → rubric, fail-closed)
+    judge.py       support/relevance/conflict (deterministic; LLM/NLI tier behind the calls)
+    harness.py     runs the golden answer key through the pipeline → pass@1 + mismatches
   tools/
     market_data.py quote tool — fixture / Alpha Vantage / Finnhub, ticker-agnostic
+    edgar.py       SEC EDGAR — recent filings list + extractive cited summary
 ui/
   streamlit_app.py the two-surface UI (advisor briefing + Show my work)
   theme.py         Munich-Re-inspired design system (offline system fonts)
@@ -128,7 +137,8 @@ policies/          _base.yaml + per-vertical packs (financial_services_us, energ
 data/corpus/       synthetic corpus per vertical (+ manifest.jsonl)
 data/market/       offline quote fixture
 golden/            golden eval set + validate_golden.py (the "define correct" gate)
-tests/             pytest suite (hermetic — forces the keyword backend)
+tests/             pytest suite (hermetic — forces keyword/offline paths)
+Docs/one_pager.md  the plain-language, non-technical customer page
 ```
 
 ---
@@ -141,7 +151,7 @@ python -m golden.validate_golden financial_services
 python -m golden.validate_golden energy
 
 # Test suite (hermetic — no network/API calls):
-pytest -q                       # 48 passing, 1 skipped (opt-in semantic)
+pytest -q                       # 49 passing, 1 skipped (opt-in semantic)
 RUN_EMBED_TESTS=1 pytest tests/test_retriever.py   # exercises the real OpenAI+Chroma path
 
 # Eval scoreboard — run the golden answer key through the real pipeline:
@@ -156,14 +166,14 @@ mypy --strict app/
 
 ## Build status
 
-**Done (T0–T11):** models/config · dual-surface UI · policy loader · governed
+**Complete (T0–T11).** models/config · dual-surface UI · policy loader · governed
 LangGraph graph (pass-edge invariant) · retriever (OpenAI embeddings + Chroma, keyword
 fallback) · market-data tool (fixture + Alpha Vantage + Finnhub) · SEC-EDGAR filings
-pull + extractive summarization · **guardrails** (PII + injection + sensitive,
-guard-first) · **full gate cascade** (floor → support → rubric) · entitlement
-signature · memory policy (cross-session OFF) · **hash-chained audit** · golden
-harness + calibration · final validation + the plain-language one-pager
-(`Docs/one_pager.md`).
+pull + extractive cited summary · **guardrails** (regex + **Presidio NER** PII +
+injection deliver-with-exclusion + prohibited/entitlement enforcement, guard-first) ·
+**full gate cascade** (floor → support → rubric) · entitlement signature · memory
+policy (cross-session OFF) · **hash-chained audit** · golden harness + calibration ·
+final validation + the plain-language one-pager (`Docs/one_pager.md`).
 
 **The three-pillar moat is real:** guardrails ✓ · eval-against-goal ✓ · tamper-evident audit ✓.
 
@@ -172,7 +182,7 @@ cross-family LLM / NLI judge for stage-2 support + strict rubric; an intent clas
 for the tipping-off-vs-Q&A and out-of-scope distinctions; Presidio NER for name/address
 PII. The deterministic defaults keep the suite hermetic and the demo keyless.
 
-**Quality:** ruff + `mypy --strict` clean; **48 tests** (1 opt-in skipped); both
+**Quality:** ruff + `mypy --strict` clean; **49 tests** (1 opt-in skipped); both
 verticals `validate_golden`-CLEAN; golden harness **pass@1 0.75** (all positives
 deliver; vertical signatures pass).
 
