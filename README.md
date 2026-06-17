@@ -141,8 +141,11 @@ python -m golden.validate_golden financial_services
 python -m golden.validate_golden energy
 
 # Test suite (hermetic — no network/API calls):
-pytest -q                       # 23 passing, 1 skipped (opt-in semantic)
+pytest -q                       # 48 passing, 1 skipped (opt-in semantic)
 RUN_EMBED_TESTS=1 pytest tests/test_retriever.py   # exercises the real OpenAI+Chroma path
+
+# Eval scoreboard — run the golden answer key through the real pipeline:
+python -m app.eval.harness financial_services      # pass@1 + per-bucket + mismatches
 
 # Lint + types (must pass):
 ruff check app/ ui/ tests/
@@ -153,14 +156,25 @@ mypy --strict app/
 
 ## Build status
 
-**Done:** T0 models/config · T1 dual-surface UI · T2 policy loader · T3 governed
-LangGraph graph (pass-edge invariant) · T4 retriever (OpenAI embeddings + Chroma,
-keyword fallback) · T4b market-data tool (fixture + Alpha Vantage + Finnhub).
-**In progress / next:** SEC-EDGAR filings pull for live tickers · T5 guardrails
-(Presidio + policy classes) · T6 full gate cascade (cross-family support + rubric) ·
-T9 hash-chained audit · T10 golden harness.
+**Done (T0–T11):** models/config · dual-surface UI · policy loader · governed
+LangGraph graph (pass-edge invariant) · retriever (OpenAI embeddings + Chroma, keyword
+fallback) · market-data tool (fixture + Alpha Vantage + Finnhub) · SEC-EDGAR filings
+pull + extractive summarization · **guardrails** (PII + injection + sensitive,
+guard-first) · **full gate cascade** (floor → support → rubric) · entitlement
+signature · memory policy (cross-session OFF) · **hash-chained audit** · golden
+harness + calibration · final validation + the plain-language one-pager
+(`Docs/one_pager.md`).
 
-**Quality:** ruff + `mypy --strict` clean; 23 tests; both verticals `validate_golden`-CLEAN.
+**The three-pillar moat is real:** guardrails ✓ · eval-against-goal ✓ · tamper-evident audit ✓.
+
+**Production tiers (documented seams, swap-in behind the same calls):** the
+cross-family LLM / NLI judge for stage-2 support + strict rubric; an intent classifier
+for the tipping-off-vs-Q&A and out-of-scope distinctions; Presidio NER for name/address
+PII. The deterministic defaults keep the suite hermetic and the demo keyless.
+
+**Quality:** ruff + `mypy --strict` clean; **48 tests** (1 opt-in skipped); both
+verticals `validate_golden`-CLEAN; golden harness **pass@1 0.75** (all positives
+deliver; vertical signatures pass).
 
 ---
 
