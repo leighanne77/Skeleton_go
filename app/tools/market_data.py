@@ -5,12 +5,15 @@ A thin, swappable market-data tool. Two backends behind one interface:
   • OFFLINE FIXTURE (default, keyless) — reads data/market/quotes.json. Deterministic,
     runs with zero keys/network (CLAUDE.md principle 1). This is what the demo and the
     tests use.
-  • LIVE ADAPTER (opt-in, key-gated) — a delayed-quote pull from a provider
-    (Alpha Vantage by default; US-domiciled, clean provenance per principle 3).
+  • LIVE ADAPTER (opt-in, key-gated) — a quote pull from a provider behind
+    `market_data_provider` (both US-domiciled, clean provenance per principle 3):
+      - `alpha_vantage` — GLOBAL_QUOTE, **delayed end-of-day** close (free tier;
+        intraday is premium).
+      - `finnhub` — /quote, **real-time** US quotes (free tier, 60/min).
     Activated ONLY when `use_real_market_data` is true AND a key is present. Any live
     failure (no network, rate-limit, parse error) falls back to the fixture. Quotes are
-    informational/as-of and NEVER execution-grade — the `no_realtime_quote` guardrail
-    still applies.
+    informational and NEVER execution-grade — the `no_realtime_quote` guardrail still
+    applies (a trade-now / execution-price ask routes to a human regardless of source).
 
 REPEATABLE BY DESIGN: nothing here is Microsoft-specific. The tool is ticker-agnostic
 — `MSFT` is the worked *live* example, `MRB` the worked *offline/synthetic* example,
@@ -22,6 +25,7 @@ from __future__ import annotations
 import json
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 from app.config import get_settings
@@ -174,9 +178,62 @@ def _fetch_alpha_vantage(
     return result
 
 
+# ── live adapter: Finnhub /quote (free real-time US quotes) ───────────────────
+def _parse_finnhub(payload: dict[str, object], symbol: str) -> Quote | None:
+    """Pure parser for Finnhub /quote JSON → Quote. Testable offline.
+
+    Finnhub returns {c: current, d: change, dp: change%, h, l, o, pc: prev close,
+    t: unix ts}. `c == 0` means an unknown symbol / no data → None.
+    """
+
+    def num(key: str) -> float | None:
+        v = payload.get(key)
+        return float(v) if isinstance(v, (int, float)) else None
+
+    last = num("c")
+    if not last:  # 0 or missing → invalid symbol / no data
+        return None
+    name, exch = _meta(symbol)
+    ts = payload.get("t")
+    as_of = (
+        datetime.fromtimestamp(int(ts), tz=timezone.utc).isoformat()
+        if isinstance(ts, (int, float)) and ts
+        else "live"
+    )
+    return Quote(
+        symbol=symbol,
+        name=name,
+        last=last,
+        as_of=as_of,
+        label="Real-time market quote via Finnhub. Informational — not an execution price.",
+        grade="realtime",
+        execution_grade=False,
+        currency="USD",
+        exchange=exch,
+        change=num("d"),
+        change_pct=num("dp"),
+        prev_close=num("pc"),
+        day_high=num("h"),
+        day_low=num("l"),
+    )
+
+
+def _fetch_finnhub(
+    symbol: str, api_key: str, timeout: float = 10.0
+) -> dict[str, object]:
+    params = urllib.parse.urlencode({"symbol": symbol, "token": api_key})
+    url = f"https://finnhub.io/api/v1/quote?{params}"
+    req = urllib.request.Request(url, headers={"User-Agent": "northwind-briefing/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 (https, fixed host)
+        result: dict[str, object] = json.loads(resp.read().decode("utf-8"))
+    return result
+
+
 def _live_quote(symbol: str, api_key: str, provider: str) -> Quote | None:
     if provider == "alpha_vantage":
         return _parse_global_quote(_fetch_alpha_vantage(symbol, api_key), symbol)
+    if provider == "finnhub":
+        return _parse_finnhub(_fetch_finnhub(symbol, api_key), symbol)
     raise QuoteUnavailable(f"unknown market_data_provider: {provider!r}")
 
 

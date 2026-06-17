@@ -10,7 +10,12 @@ from __future__ import annotations
 import pytest
 
 import app.tools.market_data as md
-from app.tools.market_data import MarketDataTool, _fixture_quote, _parse_global_quote
+from app.tools.market_data import (
+    MarketDataTool,
+    _fixture_quote,
+    _parse_finnhub,
+    _parse_global_quote,
+)
 
 # Recorded Alpha Vantage GLOBAL_QUOTE response (demo key, IBM) — the locked shape.
 SAMPLE = {
@@ -59,6 +64,33 @@ def test_alpha_vantage_parse_from_sample() -> None:
     assert q.execution_grade is False
     assert q.grade == "delayed_eod"
     assert "Alpha Vantage" in q.label
+
+
+def test_finnhub_parse_from_sample() -> None:
+    # Finnhub /quote shape: c=current, d=change, dp=change%, pc=prev close, t=unix
+    payload = {
+        "c": 384.27,
+        "d": -9.56,
+        "dp": -2.43,
+        "h": 395.2,
+        "l": 383.1,
+        "o": 394.0,
+        "pc": 393.83,
+        "t": 1718568000,
+    }
+    q = _parse_finnhub(payload, "MSFT")
+    assert q is not None
+    assert q.last == pytest.approx(384.27)
+    assert q.change_pct == pytest.approx(-2.43)
+    assert q.prev_close == pytest.approx(393.83)
+    assert q.grade == "realtime"
+    assert q.execution_grade is False
+    assert "Finnhub" in q.label
+
+
+def test_finnhub_unknown_symbol_returns_none() -> None:
+    # Finnhub returns c=0 for an unknown symbol
+    assert _parse_finnhub({"c": 0, "d": None, "dp": None}, "ZZZZ") is None
 
 
 def test_alpha_vantage_rate_limited_returns_none() -> None:

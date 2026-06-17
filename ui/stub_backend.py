@@ -432,8 +432,10 @@ def _ticker_quote(query: str) -> tuple[AnswerEnvelope, RunTrace]:
         )
         return env, trace
 
-    live = quote.grade == "delayed_eod"
-    src = "live delayed quote (Alpha Vantage)" if live else "offline fixture snapshot"
+    src = {
+        "realtime": "live real-time quote (Finnhub)",
+        "delayed_eod": "live delayed quote (Alpha Vantage)",
+    }.get(quote.grade, "offline fixture snapshot")
     answer = (
         f"Latest available quote for {name} ({quote.symbol}, {quote.exchange or 'US'}), shown "
         f"as-of {quote.as_of} and clearly labeled. SEC-filing summaries for {quote.symbol} aren't "
