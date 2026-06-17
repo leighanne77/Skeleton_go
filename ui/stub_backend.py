@@ -29,6 +29,7 @@ from app.models import (
     RunTrace,
     Verdict,
 )
+from app.tools import edgar
 from app.tools.market_data import SYMBOL_META, TOP_TICKERS, MarketDataTool
 
 # Fixed topology for the BFSI stock-briefing demo (recolored post-run, never animated).
@@ -437,12 +438,30 @@ def _ticker_quote(query: str) -> tuple[AnswerEnvelope, RunTrace]:
         "delayed_eod": "live delayed quote (Alpha Vantage)",
     }.get(quote.grade, "offline fixture snapshot")
     answer = (
-        f"Latest available quote for {name} ({quote.symbol}, {quote.exchange or 'US'}), shown "
-        f"as-of {quote.as_of} and clearly labeled. SEC-filing summaries for {quote.symbol} aren't "
-        "in this demo corpus — in production the same governed pipeline summarizes the issuer's "
-        "10-K / 10-Q / 8-K with citations, exactly as it does for the worked example issuer. "
-        f"{quote.symbol} is just an example; the market-data tool is ticker-agnostic (top-50)."
+        f"Latest available quote for {name} ({quote.symbol}, {quote.exchange or 'US'}), "
+        f"as-of {quote.as_of} and clearly labeled."
     )
+
+    # SEC filings are pulled alongside the price (EDGAR, when live data is enabled).
+    filings = edgar.get_recent_filings(quote.symbol)
+    if filings:
+        answer += "\n\n**Recent SEC filings (EDGAR):**\n" + "\n".join(
+            f"- **{f.form}** · {f.filed} — [{f.title}]({f.url})" for f in filings
+        )
+        retr_node = (
+            NodeStatus.DONE,
+            f"EDGAR: {len(filings)} recent filings for {quote.symbol}",
+        )
+    else:
+        answer += (
+            "\n\n_Recent SEC filings: enable live data (`USE_REAL_MARKET_DATA`) to pull this "
+            "issuer's 10-K / 10-Q / 8-K from SEC EDGAR alongside the quote._"
+        )
+        retr_node = (
+            NodeStatus.SKIPPED,
+            f"EDGAR off — no live filings for {quote.symbol}",
+        )
+
     env = AnswerEnvelope(
         status=Verdict.DELIVERED,
         answer_text=answer,
@@ -454,12 +473,9 @@ def _ticker_quote(query: str) -> tuple[AnswerEnvelope, RunTrace]:
     trace = RunTrace(
         nodes=_nodes(
             {
-                "retriever": (
-                    NodeStatus.SKIPPED,
-                    f"no {quote.symbol} filings in demo corpus",
-                ),
+                "retriever": retr_node,
                 "market_data": (NodeStatus.DONE, f"{quote.symbol} quote — {src}"),
-                "specialist": (NodeStatus.SKIPPED, "quote-only briefing"),
+                "specialist": (NodeStatus.SKIPPED, "quote + filing-list briefing"),
             }
         ),
         gate_stages=[

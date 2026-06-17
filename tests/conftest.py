@@ -11,8 +11,12 @@ from __future__ import annotations
 import pytest
 
 from app.agents import embeddings
+from app.tools import edgar
 
 
 @pytest.fixture(autouse=True)
-def _force_keyword_retrieval(monkeypatch: pytest.MonkeyPatch) -> None:
+def _hermetic(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Force the offline paths so the suite never calls a network/LLM API, regardless
+    # of what .env has set: keyword retrieval (not OpenAI embeddings) + EDGAR off.
     monkeypatch.setattr(embeddings, "embed_enabled", lambda: False)
+    monkeypatch.setattr(edgar, "enabled", lambda: False)

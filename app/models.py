@@ -155,6 +155,15 @@ class Quote(BaseModel):
     market_cap: float | None = None
 
 
+class FilingRef(BaseModel):
+    """A pointer to a recent SEC filing (EDGAR). Metadata + link, not the contents."""
+
+    form: str  # 10-K | 10-Q | 8-K | ...
+    filed: str  # filing date (YYYY-MM-DD)
+    title: str  # e.g. "MICROSOFT CORP — 10-Q"
+    url: str  # link to the primary document on sec.gov
+
+
 # ── Request / guardrails / gate ───────────────────────────────────────────────
 class RunRequest(BaseModel):
     """── INPUT ──"""
