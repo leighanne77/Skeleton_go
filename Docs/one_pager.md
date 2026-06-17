@@ -1,49 +1,52 @@
-# Get your advisors up to speed on any stock — in minutes, safely
+<!-- The customer-facing one-pager. Designed/branded version: AdvisorBrief_OnePager.pdf
+     (kept alongside this file). This markdown mirrors that content. -->
 
-### The problem
-Before a client conversation, an advisor often spends an hour pulling a stock's price
-and reading through long regulatory filings to find what actually matters. It's slow,
-it's inconsistent from advisor to advisor, and — in a regulated firm — every shortcut
-is a compliance risk.
+**Northwind Securities** · Advisor Enablement · Prototype
+`PROTOTYPE ONE-PAGER · CONFIDENTIAL`
 
-### What this does
-One simple tool. An advisor types a ticker and gets a short, reliable **briefing**:
+# AdvisorBrief
 
-- the **current price**, clearly time-stamped,
-- the **key points from the company's most recent SEC filings**, in plain language,
-- and **a link from every fact back to the exact source document**.
+Get up to speed on a stock in minutes — a time-stamped quote and the key points from
+recent SEC filings, every fact linked to its source.
 
-Minutes, not an afternoon — and the same quality every time.
-
-### Why you can trust it
-This isn't a chatbot that confidently guesses. **Every answer is checked before the
-advisor ever sees it**, and the tool is built so it simply *cannot*:
-
-- **give investment advice** — if an advisor asks "should I buy this for my client?",
-  it doesn't answer; it hands the question to a qualified person.
-- **reveal information someone shouldn't see** — confidential or not-yet-public
-  details stay invisible to anyone without the right clearance.
-- **pass an old price off as a live one** — prices are always labelled, never
-  presented as something to trade on.
-
-And when anything is uncertain or out of bounds, it says so plainly and **routes the
-question to a human** rather than improvising. Every answer keeps a **tamper-evident
-record** of how it was checked — so your compliance team can always see why something
-was delivered or held back.
-
-### The bottom line
-> **Useful for the advisor. Defensible for compliance.**
->
-> Faster client prep, consistent quality across every advisor, and a built-in
-> guardrail layer that lets you put this in front of your team with confidence.
-
-### What's next (optional)
-Because every answer is already recorded, the same tool can show you **whether the
-tool is actually being used** — which advisors are leaning on it and which aren't —
-and give each advisor a simple **"how fully briefed am I"** indicator on a stock. You
-see adoption and outcomes; the advisor gets a nudge toward a complete picture.
+**Client** Northwind Securities (US wealth management) · **User** advisor (firm
+employee) · **Coverage** ticker-agnostic market data across top market-cap names
+(NYSE & beyond); MSFT shown · **Sources** market-data quote + SEC filings
+(10-K / 10-Q / 8-K)
 
 ---
-*One tool, two audiences: a clean, plain-language experience for the advisor, and —
-for your technical reviewers — a "show my work" view that opens the whole thing up and
-proves, step by step, exactly how each answer was produced and checked.*
+
+### Outcome
+Advisors get up to speed on a stock fast — a current, clearly-dated quote plus a
+plain-English summary of what matters in recent SEC filings — so client conversations
+start informed, consistent, and inside the firm's compliance lines.
+
+### How one query works
+- **Capture** — the question and the advisor's identity are logged.
+- **Retrieve** — current quote, plus relevant passages from recent 10-K / 10-Q / 8-K filings.
+- **Synthesize** — a brief grounded only in those sources, every fact linked to its source.
+- **Evaluation gate** — claims cited, language fair and balanced, disclosures present,
+  confidence above threshold.
+- **Human-in-the-loop** — flagged or low-confidence briefs escalate to a supervising
+  principal before client use.
+- **Audit** — every briefing kept as a tamper-evident, exportable record.
+
+### 🖥️ What the advisor sees
+A delivered MSFT briefing. The quote is a dated, clearly-labeled end-of-day value
+(informational, not an execution price); "How this was checked" and the audit reference
+expose the gate and tamper-evident trail. MSFT is the ticker-agnostic market-data
+example; the worked filing example uses a separate issuer.
+
+### 🗺️ Roadmap
+- **Now** — prototype: governed quote-plus-filings briefing with gate, escalation, and
+  audit trail.
+- **Next** — manager view: a dashboard showing which advisors log in and how much
+  material they review — a signal of learning and readiness.
+- **Later** — coverage: full multi-exchange universe, earnings / 8-K alerts, and CRM hooks.
+
+---
+
+⚖ *Prototype built on a synthetic golden dataset and the firm's encoded policy
+rule-set; figures shown are illustrative. Informational only — not investment advice or
+a recommendation. Suitability and required disclosures apply at the point of client
+use, subject to the firm's own compliance and legal review.*
