@@ -1,8 +1,11 @@
 """app/guardrails.py — guard-first input/output screening (rubric item 6).
 
 Pack-driven, deterministic, keyless:
-  • PII (pack `pii_classes`, regex) → redact/mask per `handling`. NER-only classes
-    (street_address / person_name) are an optional Presidio upgrade, off by default.
+  • PII (pack `pii_classes`, regex) → redact/mask per `handling`. The NER-only classes
+    (street_address / person_name) are handled by **Presidio + spaCy** when
+    `USE_PRESIDIO_NER=true` (keyless/offline once the model is installed:
+    `python -m spacy download en_core_web_sm`); off by default, and the regex pass
+    always runs so the skeleton degrades gracefully without the model.
   • Injection screen — instruction-injection markers in retrieved/untrusted content are
     flagged and never followed (retrieved content is data, never commands).
   • Sensitive-class keyword screen (pack `sensitive_classes`) — a secondary signal; the
@@ -15,10 +18,15 @@ before any retrieved instruction could be acted on.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
+from typing import Any
 
 from app.config import get_settings
 from app.models import GuardrailResult
 from app.policy import get_pack
+
+# pack NER `entity` → Presidio entity type (spaCy has no ADDRESS; LOCATION is the proxy)
+_NER_ENTITY = {"PERSON": "PERSON", "ADDRESS": "LOCATION"}
 
 # Instruction-injection markers (case-insensitive). Treat any hit as data to ignore.
 _INJECTION = re.compile(
@@ -59,6 +67,64 @@ def redact_pii(
         out, n = re.subn(pattern, repl, out)
         if n:
             actions.append({"class": name, "action": handling, "count": n})
+    return out, actions
+
+
+@lru_cache(maxsize=1)
+def _ner_engine() -> Any:
+    """Presidio analyzer on a small spaCy model (en_core_web_sm). Cached; returns None
+    if Presidio or the model isn't installed (so the regex pass still runs offline)."""
+    try:
+        from presidio_analyzer import AnalyzerEngine
+        from presidio_analyzer.nlp_engine import NlpEngineProvider
+
+        provider = NlpEngineProvider(
+            nlp_configuration={
+                "nlp_engine_name": "spacy",
+                "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}],
+            }
+        )
+        return AnalyzerEngine(
+            nlp_engine=provider.create_engine(), supported_languages=["en"]
+        )
+    except Exception:  # noqa: BLE001 — missing presidio/model → NER unavailable, regex still works
+        return None
+
+
+def redact_ner(
+    text: str, pack_name: str | None = None
+) -> tuple[str, list[dict[str, object]]]:
+    """Redact NER PII (the pack's `detect: ner` classes — name/address) via Presidio.
+    No-op (returns text unchanged) if the engine is unavailable."""
+    engine = _ner_engine()
+    if engine is None:
+        return text, []
+    pack = get_pack(pack_name or get_settings().policy_pack)
+    entities = [
+        _NER_ENTITY.get(str(c.get("entity")), str(c.get("entity")))
+        for c in pack.get("pii_classes", [])
+        if c.get("detect") == "ner" and c.get("entity")
+    ]
+    if not entities:
+        return text, []
+    results = [
+        r
+        for r in engine.analyze(text=text, entities=entities, language="en")
+        if r.score >= 0.4
+    ]
+    actions: list[dict[str, object]] = []
+    out = text
+    for r in sorted(
+        results, key=lambda x: x.start, reverse=True
+    ):  # end→start preserves offsets
+        out = out[: r.start] + f"[{r.entity_type} REDACTED]" + out[r.end :]
+        actions.append(
+            {
+                "class": r.entity_type.lower(),
+                "action": "redact",
+                "score": round(r.score, 2),
+            }
+        )
     return out, actions
 
 
@@ -112,8 +178,12 @@ def query_violations(
 
 
 def screen(text: str, pack_name: str | None = None) -> tuple[str, GuardrailResult]:
-    """Guard-first: redact PII, flag injection + sensitive classes. Returns clean text."""
+    """Guard-first: redact PII (regex + optional Presidio NER), flag injection +
+    sensitive classes. Returns clean text."""
     clean, actions = redact_pii(text, pack_name)
+    if get_settings().use_presidio_ner:
+        clean, ner_actions = redact_ner(clean, pack_name)
+        actions.extend(ner_actions)
     for cls in detect_sensitive(text, pack_name):
         actions.append({"class": cls, "action": "flag_sensitive"})
     return clean, GuardrailResult(

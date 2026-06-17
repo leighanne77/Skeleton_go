@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import re
 
+import pytest
+
+import app.guardrails as guardrails
 from app.guardrails import detect_sensitive, redact_pii, scan_injection, screen
 
 
@@ -37,3 +40,14 @@ def test_detect_sensitive_keywords() -> None:
     hits = detect_sensitive("This concerns a suspicious activity report under BSA.")
     assert "sar_data" in hits
     assert "mnpi" in detect_sensitive("These are wall-crossed MNPI deal terms.")
+
+
+def test_presidio_ner_redacts_name() -> None:
+    # NER PII (name) — needs Presidio + the spaCy model; skip cleanly if absent.
+    if guardrails._ner_engine() is None:
+        pytest.skip("Presidio / en_core_web_sm not installed")
+    out, actions = guardrails.redact_ner(
+        "Advisor Jordan Avery met with the client today."
+    )
+    assert "Jordan Avery" not in out
+    assert any(a["class"] == "person" for a in actions)

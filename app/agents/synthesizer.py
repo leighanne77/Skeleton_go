@@ -30,7 +30,9 @@ def _top_sentences(text: str, query: str, k: int = 3) -> list[str]:
         candidates.extend(p.strip() for p in _SENT_SPLIT.split(s))
     # deliver-with-exclusion: drop any sentence carrying an instruction-injection
     # (the injected command is excluded from the answer, never followed).
-    candidates = [s for s in candidates if 40 <= len(s) <= 400 and not scan_injection(s)]
+    candidates = [
+        s for s in candidates if 40 <= len(s) <= 400 and not scan_injection(s)
+    ]
     if not candidates:
         return [text.strip()[:400]]
     scored = sorted(
