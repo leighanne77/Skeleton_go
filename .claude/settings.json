@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)"
+    ],
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)"
+    ],
+    "allow": [
+      "Bash(python:*)", "Bash(pytest:*)", "Bash(ruff:*)", "Bash(mypy:*)",
+      "Bash(streamlit:*)", "Bash(pip:*)",
+      "Bash(git status:*)", "Bash(git add:*)", "Bash(git commit:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  }
+}

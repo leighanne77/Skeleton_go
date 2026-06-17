@@ -1,0 +1,15 @@
+{"source_id": "reg_bi", "doc_title": "SEC Regulation Best Interest (Reg BI) \u2014 Standard of Conduct (excerpt, synthetic)", "path": "reg_bi.md", "regime": "sec", "entitlement_tags": []}
+{"source_id": "finra_2111", "doc_title": "FINRA Rule 2111 \u2014 Suitability (excerpt, synthetic)", "path": "finra_2111.md", "regime": "finra", "entitlement_tags": []}
+{"source_id": "reg_fd", "doc_title": "SEC Regulation FD \u2014 Selective Disclosure (excerpt, synthetic)", "path": "reg_fd.md", "regime": "sec", "entitlement_tags": []}
+{"source_id": "bsa_sar", "doc_title": "FinCEN / Bank Secrecy Act \u2014 Suspicious Activity Report Requirement (excerpt, synthetic)", "path": "bsa_sar.md", "regime": "fincen", "entitlement_tags": []}
+{"source_id": "ev_supervision_log", "doc_title": "Northwind Securities \u2014 Reg BI Care Obligation Supervision Log Q1 2026 (synthetic)", "path": "ev_supervision_log.md", "regime": "finra", "entitlement_tags": []}
+{"source_id": "ev_supervision_summary", "doc_title": "Northwind Securities \u2014 Q1 2026 Supervision Summary Memo (synthetic)", "path": "ev_supervision_summary.md", "regime": "finra", "entitlement_tags": []}
+{"source_id": "mnpi_dealbook", "doc_title": "RESTRICTED \u2014 MATERIAL NON-PUBLIC INFORMATION (MNPI) \u2014 Wall-Crossed (synthetic)", "path": "mnpi_dealbook.md", "regime": "internal", "entitlement_tags": ["mnpi"]}
+{"source_id": "sar_case", "doc_title": "RESTRICTED \u2014 SUSPICIOUS ACTIVITY REPORT (SAR) / AML INVESTIGATION (synthetic)", "path": "sar_case.md", "regime": "internal", "entitlement_tags": ["sar_data"]}
+{"source_id": "customer_account", "doc_title": "Northwind Securities \u2014 Customer Account Record (synthetic, illustrative)", "path": "customer_account.md", "regime": "internal", "entitlement_tags": []}
+{"source_id": "injection_memo", "doc_title": "Northwind Securities \u2014 Research Desk Note (synthetic)", "path": "injection_memo.md", "regime": "internal", "entitlement_tags": []}
+{"source_id": "disclosure_brochure", "doc_title": "Northwind Securities \u2014 Form ADV Part 2A Disclosure Brochure (excerpt, synthetic)", "path": "disclosure_brochure.md", "regime": "sec", "entitlement_tags": []}
+{"source_id": "aml_policy", "doc_title": "Northwind Securities \u2014 AML Program Policy (excerpt, synthetic)", "path": "aml_policy.md", "regime": "internal", "entitlement_tags": []}
+{"source_id": "mrb_10k", "doc_title": "Meridian Regional Bancorp — Form 10-K (FY2025) excerpt (synthetic)", "path": "mrb_10k.md", "regime": "sec", "entitlement_tags": []}
+{"source_id": "mrb_10q", "doc_title": "Meridian Regional Bancorp — Form 10-Q (Q1 2026) excerpt (synthetic)", "path": "mrb_10q.md", "regime": "sec", "entitlement_tags": []}
+{"source_id": "mrb_8k", "doc_title": "Meridian Regional Bancorp — Form 8-K (Jun 2026) excerpt (synthetic)", "path": "mrb_8k.md", "regime": "sec", "entitlement_tags": []}

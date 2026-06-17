@@ -1,0 +1,25 @@
+{
+  "_comment": "Offline deterministic market-data STUB — the default MarketDataTool backend (CLAUDE.md principle 1: zero-keys-to-run, no runtime network calls). A real adapter (e.g. EDGAR + a delayed-quote API) sits behind the same interface, key-gated via .env (MARKET_DATA_API_KEY); when absent, this fixture serves. Every quote is explicitly labeled as-of/delayed — never presented as live execution-grade. as_of is pinned (no Date.now) so retrieval/eval stay deterministic.",
+  "source": "stub_fixture",
+  "grade": "delayed_snapshot",
+  "execution_grade": false,
+  "quotes": {
+    "MRB": {
+      "symbol": "MRB",
+      "name": "Meridian Regional Bancorp, Inc.",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "last": 48.27,
+      "change": 0.62,
+      "change_pct": 1.30,
+      "prev_close": 47.65,
+      "day_high": 48.91,
+      "day_low": 47.40,
+      "volume": 1284300,
+      "market_cap": 5630000000,
+      "as_of": "2026-06-16T20:00:00Z",
+      "delay_minutes": 15,
+      "label": "Delayed snapshot (as-of close 2026-06-16). Not a live execution price."
+    }
+  }
+}

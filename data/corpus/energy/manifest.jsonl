@@ -1,0 +1,13 @@
+{"source_id": "cip_007_r2", "doc_title": "NERC CIP-007-6 R2 — Security Patch Management", "path": "cip_007_r2.md", "regime": "nerc_cip", "entitlement_tags": []}
+{"source_id": "cip_011_r1", "doc_title": "NERC CIP-011-2 R1 — Information Protection", "path": "cip_011_r1.md", "regime": "nerc_cip", "entitlement_tags": []}
+{"source_id": "cip_004_r4", "doc_title": "NERC CIP-004-6 R4 — Access Management", "path": "cip_004_r4.md", "regime": "nerc_cip", "entitlement_tags": []}
+{"source_id": "ev_cip007_patch", "doc_title": "Northwind CIP-007 R2 Patch-Management Evidence Log Q1 2026", "path": "ev_cip007_patch.md", "regime": "nerc_cip", "entitlement_tags": []}
+{"source_id": "ev_cip007_summary_memo", "doc_title": "Northwind CIP-007 R2 Patch Status Summary Memo Q1 2026", "path": "ev_cip007_summary_memo.md", "regime": "nerc_cip", "entitlement_tags": []}
+{"source_id": "ev_cip004_access", "doc_title": "Northwind CIP-004 R4 Access-Review Attestation Q1 2026", "path": "ev_cip004_access.md", "regime": "nerc_cip", "entitlement_tags": []}
+{"source_id": "ferc_ceii_order", "doc_title": "FERC Order No. 833 — CEII (excerpt)", "path": "ferc_ceii_order.md", "regime": "ferc", "entitlement_tags": []}
+{"source_id": "interconnection_agmt", "doc_title": "Large Generator Interconnection Agreement — Cedar Ridge Solar", "path": "interconnection_agmt.md", "regime": "ferc", "entitlement_tags": []}
+{"source_id": "substation_x_ot", "doc_title": "Substation X (Riverside 230 kV) — Protection & Control Configuration", "path": "substation_x_ot.md", "regime": "nerc_cip", "entitlement_tags": ["ceii", "ot_asset"]}
+{"source_id": "bcsi_list", "doc_title": "Control Center A — BES Cyber System Inventory", "path": "bcsi_list.md", "regime": "nerc_cip", "entitlement_tags": ["bcsi"]}
+{"source_id": "puc_service_quality", "doc_title": "State PUC Service Quality Rule 14-302", "path": "puc_service_quality.md", "regime": "state_puc", "entitlement_tags": []}
+{"source_id": "rate_case_cos", "doc_title": "Northwind Rate Case RC-2026-118 — Cost-of-Service Schedule", "path": "rate_case_cos.md", "regime": "state_puc", "entitlement_tags": []}
+{"source_id": "injection_notice", "doc_title": "Northwind Substation Maintenance Security Notice", "path": "injection_notice.md", "regime": "nerc_cip", "entitlement_tags": []}

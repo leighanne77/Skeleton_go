@@ -1,0 +1,14 @@
+# requirements-dev.txt — tooling, linting, types, tests
+# Install alongside the base set:  pip install -r requirements.txt -r requirements-dev.txt
+
+pytest>=8.0                 # the required negative tests are the acceptance criteria
+pytest-cov>=5.0             # coverage (optional gate in CI)
+ruff>=0.5                   # linter + formatter (replaces flake8/isort/black)
+mypy>=1.10                  # static types — run strict on app/
+pre-commit>=3.7             # run ruff + mypy on commit
+
+# Suggested config (put in pyproject.toml):
+#   [tool.ruff]            line-length = 100 ; target-version = "py311"
+#   [tool.ruff.lint]       select = ["E","F","I","B","UP","SIM"]   # incl. isort (I) + bugbear (B)
+#   [tool.mypy]            python_version = "3.11" ; strict = true ; files = "app"
+#   [tool.pytest.ini_options]  testpaths = ["tests"]

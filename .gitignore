@@ -1,0 +1,28 @@
+# secrets / env — never commit real keys
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# virtual environments (regenerable from requirements*.txt)
+.venv/
+venv/
+env/
+
+# data / vectors (large, regenerable)
+data/chroma/
+*.sqlite3
+
+# os / editor
+.DS_Store
+.vscode/

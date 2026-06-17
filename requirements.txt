@@ -1,0 +1,65 @@
+# requirements.txt — Spec for the Skeleton (start set; covers all FIVE verticals:
+# energy, insurance, life sciences, manufacturing, financial services)
+# Python 3.11+ . Clean-provenance per §1 (no adversarial-nation-linked tooling).
+# Fast-movers (langgraph / chromadb / langfuse) are CAPPED to their current major —
+# each shipped a breaking major since the old >=0.x floors. Resolve exact versions at
+# install and FREEZE A LOCKFILE once green (KNOWN_ISSUES T11). Pre-bake the venv
+# BEFORE the recorded session — do not `pip install` (esp. torch) on camera.
+# Post-install: `python -m spacy download en_core_web_sm`  and  `cp .env.example .env`
+
+# ── orchestration & LLM ──────────────────────────────────────────────
+langgraph>=1,<2             # graph orchestration + checkpointer (session memory). 1.x: prebuilt/checkpoint split into sub-pkgs
+# langchain-core            # pulled in transitively by langgraph — let it resolve the compatible version (don't pin separately)
+anthropic>=0.40             # Claude — primary reasoning LLM (pin exact at install)
+openai>=1.50                # real embeddings (text-embedding-3-small) + cross-family judge — used when USE_REAL_EMBED=true
+
+# ── embeddings: keyless offline fallback (USE_REAL_EMBED=false) ───────
+sentence-transformers>=3.0  # local nomic-embed-text-v1.5 (768-dim); one-time model download at setup, then offline
+torch>=2.2                  # CPU build; sentence-transformers backend. HEAVY (~GB) — PRE-INSTALL, never on camera
+
+# ── in-process tools: MCP is SPOKEN-NOT-BUILT ────────────────────────
+# tools (retriever / citation-verifier / audit-writer) are plain Python fns behind a thin interface — keyless, in-process.
+# claude-agent-sdk          # named as the open standard for the room; NOT a build dep for this demo
+
+# ── retrieval / vector store ─────────────────────────────────────────
+chromadb>=1,<2              # prototype vector DB — keyless, local, persisted. 1.x changed client/collection API (was 0.5)
+# --- production store (enable when moving off Chroma) ---
+# pgvector>=0.3
+# psycopg[binary]>=3.2
+
+# ── eval / tracing ───────────────────────────────────────────────────
+langfuse>=4,<5              # v4 = OpenTelemetry-based REWRITE (Mar 2026); different imports/decorators from v2.
+                            # Keep tracing behind a config flag — the harness must print to stdout without it (not load-bearing).
+
+# ── data models / config / policy ────────────────────────────────────
+pydantic>=2.7               # all schemas are Pydantic v2 models
+pydantic-settings>=2.3      # config from .env
+python-dotenv>=1.0
+pyyaml>=6.0                 # policy packs (_base + vertical overlay)
+tenacity>=8.2               # retry/backoff on model calls (fail-closed on exhaustion)
+
+# ── guardrails / PII ─────────────────────────────────────────────────
+presidio-analyzer>=2.2      # Microsoft — PII detection
+presidio-anonymizer>=2.2    # PII redaction/masking
+spacy>=3.7                  # Presidio NER backend  (then: python -m spacy download en_core_web_sm)
+
+# ── document ingestion ───────────────────────────────────────────────
+pypdf>=4.0
+python-docx>=1.1
+# lxml>=5.0                 # only if a vertical brings XML filings
+
+# ── UI ───────────────────────────────────────────────────────────────
+streamlit>=1.35             # task console + scoped Q&A + identity banner + verdict states
+
+# ── voice / STT (only if a scenario needs it) ────────────────────────
+# groq>=0.9                 # transcribe → embed the transcript (citable text)
+
+# ── DEFERRED: production stage-2 NLI tier ────────────────────────────
+# see "If I have more time for the Prototype.md"
+# transformers>=4.40        # DeBERTa-MNLI checkpoint for the dedicated NLI support tier (provenance-check)
+# (torch is already required above via sentence-transformers — no separate add needed)
+
+# ── OPTIONAL, per-vertical (add only when that enhancement is built) ──
+# fairlearn>=0.10           # insurance: quantitative fairness metrics (proto uses a deterministic proxy rule)
+# scispacy>=0.5             # life sciences: sharper PHI / clinical-entity detection
+# medspacy>=1.0             # life sciences: clinical NLP
