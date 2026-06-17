@@ -129,6 +129,7 @@ def inject_css() -> None:
 
           /* ⚙ gear button (open "Show my work"): big, spinning, icon-only, ghost */
           @keyframes nw-gear-spin {{ to {{ transform: rotate(360deg); }} }}
+          .st-key-audit_gear {{ display: flex; justify-content: center; margin-top: 8px; }}
           .st-key-audit_gear button {{
             background: transparent !important; border: 1px solid {p["hairline"]} !important;
             font-size: 5.4rem !important; line-height: 1; padding: 0 .35rem !important;

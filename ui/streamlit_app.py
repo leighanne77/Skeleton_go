@@ -138,6 +138,14 @@ def render_advisor() -> None:
     run = bc.button(
         "Run briefing  ›", type="primary", width="stretch", key="run_advisor"
     )
+    with bc:
+        if st.button(
+            "⚙",
+            key="audit_gear",
+            help="Show my work — the orchestration graph, the gate stages, and the audit chain",
+        ):
+            st.session_state.surface = "operator"
+            st.rerun()
     ic.caption(
         "Priority: your typed question → the live stock (if picked) → the demo scenario. "
         "A live stock fetches its SEC filings from EDGAR — that can take a few seconds."
@@ -212,18 +220,9 @@ def _render_answer(env: AnswerEnvelope) -> None:
                 "- A failed / uncertain / out-of-bounds answer is **structurally unable** to be delivered\n"
                 "- It was routed to a human reviewer and the decision was **audited**"
             )
-    ac, gc = st.columns([9, 2], vertical_alignment="center")
-    ac.caption(
-        f"Audit reference `{env.audit_ref}` · tamper-evident chain in Show my work →"
+    st.caption(
+        f"Audit reference `{env.audit_ref}` · tamper-evident chain in Show my work (⚙ below)."
     )
-    with gc:
-        if st.button(
-            "⚙",
-            key="audit_gear",
-            help="Show my work — open the technical view: the orchestration graph, the gate stages, and the audit chain",
-        ):
-            st.session_state.surface = "operator"
-            st.rerun()
 
 
 # ── OPERATOR ("Show my work") surface ─────────────────────────────────────────
