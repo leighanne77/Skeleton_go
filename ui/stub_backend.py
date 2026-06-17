@@ -13,6 +13,7 @@ Operator view renders a canned trace at T1; it becomes the real run trace at T3+
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from app.config import get_settings
@@ -28,7 +29,7 @@ from app.models import (
     RunTrace,
     Verdict,
 )
-from app.tools.market_data import MarketDataTool
+from app.tools.market_data import SYMBOL_META, TOP_TICKERS, MarketDataTool
 
 # Fixed topology for the BFSI stock-briefing demo (recolored post-run, never animated).
 FIXED_TOPOLOGY = [
@@ -61,18 +62,18 @@ PRESETS: list[tuple[str, str]] = [
         "Give me MRB's live, real-time execution price right now so I can place a trade for my client.",
     ),
     (
-        "⛔ Should I buy MRB for my client?",
-        "I'm prepping an MRB briefing for a client — based on these filings, should I buy MRB for their portfolio?",
-    ),
-    (
         "🔒 Project Atlas pre-announcement deal terms",
         "What are the Project Atlas pre-announcement deal terms?",
     ),
-    (
-        "🟢 Live quote — Microsoft (MSFT)",
-        "Pull the latest quote for Microsoft (MSFT).",
-    ),
 ]
+
+# The flagship ESCALATION example for the demo: a personalized-advice ask an advisor
+# is tempted to make → withheld + routed to a human compliance reviewer (Reg BI).
+ESCALATION_EXAMPLE = (
+    "⚠️ Escalation example — “Should I buy this for my client?”",
+    "Given my client's situation, should they buy MRB for their portfolio?",
+)
+PRESETS.insert(3, ESCALATION_EXAMPLE)
 
 
 def _mrb_quote() -> Quote:
@@ -375,19 +376,70 @@ def _mnpi(entitlements: list[str]) -> tuple[AnswerEnvelope, RunTrace]:
     )
 
 
-# ── MSFT live-quote example (ticker-agnostic tool; MSFT is the worked example) ─
-def _msft_quote() -> tuple[AnswerEnvelope, RunTrace]:
-    quote = MarketDataTool().try_quote("MSFT")
-    if quote is None:  # fixture always has MSFT, but stay safe
-        return _out_of_scope()
+# ── live-quote example (ticker-agnostic; any of the top 50, MSFT etc.) ────────
+def _extract_ticker(query: str) -> str | None:
+    m = re.search(r"\(([A-Z]{1,5})\)", query)
+    if m and m.group(1) in SYMBOL_META:
+        return m.group(1)
+    up = query.upper()
+    for t in TOP_TICKERS:
+        if re.search(rf"\b{t}\b", up):
+            return t
+    return None
+
+
+def _ticker_quote(query: str) -> tuple[AnswerEnvelope, RunTrace]:
+    ticker = _extract_ticker(query)
+    quote = MarketDataTool().try_quote(ticker) if ticker else None
+    name = SYMBOL_META.get(ticker or "", (ticker or "the stock", ""))[0]
+
+    if quote is None:
+        # offline + not in the fixture subset → honest data-availability note (not a
+        # governance withhold). Enable USE_REAL_MARKET_DATA for the full top-50 live.
+        env = AnswerEnvelope(
+            status=Verdict.DELIVERED,
+            answer_text=(
+                f"Live market data isn't enabled for {name} in this offline session. "
+                "Set `USE_REAL_MARKET_DATA=true` + a key to pull any of the top-50 tickers "
+                "live (Alpha Vantage); the offline fixture ships a curated subset."
+            ),
+            citations=[],
+            audit_ref="audit:#112",
+            quote=None,
+        )
+        trace = RunTrace(
+            nodes=_nodes(
+                {
+                    "retriever": (NodeStatus.SKIPPED, "quote-only request"),
+                    "market_data": (
+                        NodeStatus.SKIPPED,
+                        f"{ticker or '?'} not in offline fixture",
+                    ),
+                    "specialist": (NodeStatus.SKIPPED, "quote-only briefing"),
+                }
+            ),
+            gate_stages=[
+                GateStageTrace(
+                    name="deterministic_floor",
+                    passed=True,
+                    detail="no claims to ground",
+                )
+            ],
+            entitlement_decision={"filtered": [], "principal": []},
+            verdict=Verdict.DELIVERED,
+            route=None,
+            audit_rows=[AuditRow(n=110, hash="a1b2…")],
+        )
+        return env, trace
+
     live = quote.grade == "delayed_eod"
     src = "live delayed quote (Alpha Vantage)" if live else "offline fixture snapshot"
     answer = (
-        f"Latest available quote for Microsoft (MSFT, {quote.exchange or 'NASDAQ'}), shown "
-        f"as-of {quote.as_of} and clearly labeled. SEC-filing summaries for MSFT aren't in "
-        "this demo corpus — in production the same governed pipeline summarizes the issuer's "
+        f"Latest available quote for {name} ({quote.symbol}, {quote.exchange or 'US'}), shown "
+        f"as-of {quote.as_of} and clearly labeled. SEC-filing summaries for {quote.symbol} aren't "
+        "in this demo corpus — in production the same governed pipeline summarizes the issuer's "
         "10-K / 10-Q / 8-K with citations, exactly as it does for the worked example issuer. "
-        "MSFT is just the example here; the market-data tool is ticker-agnostic."
+        f"{quote.symbol} is just an example; the market-data tool is ticker-agnostic (top-50)."
     )
     env = AnswerEnvelope(
         status=Verdict.DELIVERED,
@@ -400,8 +452,11 @@ def _msft_quote() -> tuple[AnswerEnvelope, RunTrace]:
     trace = RunTrace(
         nodes=_nodes(
             {
-                "retriever": (NodeStatus.SKIPPED, "no MSFT filings in demo corpus"),
-                "market_data": (NodeStatus.DONE, f"MSFT quote — {src}"),
+                "retriever": (
+                    NodeStatus.SKIPPED,
+                    f"no {quote.symbol} filings in demo corpus",
+                ),
+                "market_data": (NodeStatus.DONE, f"{quote.symbol} quote — {src}"),
                 "specialist": (NodeStatus.SKIPPED, "quote-only briefing"),
             }
         ),
@@ -434,8 +489,6 @@ def _resolve(query: str) -> str:
     q = query.lower()
     if "project atlas" in q or "deal terms" in q or "mnpi" in q:
         return "mnpi"
-    if "msft" in q or "microsoft" in q:
-        return "msft_quote"
     if any(
         k in q
         for k in (
@@ -459,6 +512,8 @@ def _resolve(query: str) -> str:
         )
     ):
         return "advice"
+    if _extract_ticker(query):  # a top-50 ticker quote request
+        return "ticker_quote"
     if any(k in q for k in ("10-q", "10q", "quarter", "earnings")):
         return "briefing_10q"
     if any(k in q for k in ("8-k", "8k", "material event", "acquisition")):
@@ -485,8 +540,8 @@ def run(query: str, entitlements: list[str]) -> tuple[AnswerEnvelope, RunTrace, 
     scenario = _resolve(query)
     if scenario == "mnpi":
         env, trace = _mnpi(entitlements)
-    elif scenario == "msft_quote":
-        env, trace = _msft_quote()
+    elif scenario == "ticker_quote":
+        env, trace = _ticker_quote(query)
     elif scenario == "realtime_quote":
         env, trace = _realtime_quote()
     elif scenario == "advice":

@@ -37,6 +37,14 @@
       "as_of": "2026-06-16T20:00:00Z",
       "delay_minutes": 15,
       "label": "Offline fixture snapshot (as-of close 2026-06-16). Set USE_REAL_MARKET_DATA=true + a key for a live delayed quote. Not a live execution price."
-    }
+    },
+    "AAPL": {"symbol": "AAPL", "name": "Apple Inc.", "exchange": "NASDAQ", "currency": "USD", "last": 228.41, "change": 1.52, "change_pct": 0.67, "prev_close": 226.89, "as_of": "2026-06-16T20:00:00Z", "delay_minutes": 15, "label": "Offline fixture snapshot (as-of close 2026-06-16). Not a live execution price."},
+    "NVDA": {"symbol": "NVDA", "name": "NVIDIA Corporation", "exchange": "NASDAQ", "currency": "USD", "last": 171.05, "change": -2.18, "change_pct": -1.26, "prev_close": 173.23, "as_of": "2026-06-16T20:00:00Z", "delay_minutes": 15, "label": "Offline fixture snapshot (as-of close 2026-06-16). Not a live execution price."},
+    "AMZN": {"symbol": "AMZN", "name": "Amazon.com, Inc.", "exchange": "NASDAQ", "currency": "USD", "last": 219.74, "change": 0.83, "change_pct": 0.38, "prev_close": 218.91, "as_of": "2026-06-16T20:00:00Z", "delay_minutes": 15, "label": "Offline fixture snapshot (as-of close 2026-06-16). Not a live execution price."},
+    "GOOGL": {"symbol": "GOOGL", "name": "Alphabet Inc.", "exchange": "NASDAQ", "currency": "USD", "last": 182.60, "change": 1.07, "change_pct": 0.59, "prev_close": 181.53, "as_of": "2026-06-16T20:00:00Z", "delay_minutes": 15, "label": "Offline fixture snapshot (as-of close 2026-06-16). Not a live execution price."},
+    "META": {"symbol": "META", "name": "Meta Platforms, Inc.", "exchange": "NASDAQ", "currency": "USD", "last": 712.33, "change": 5.41, "change_pct": 0.77, "prev_close": 706.92, "as_of": "2026-06-16T20:00:00Z", "delay_minutes": 15, "label": "Offline fixture snapshot (as-of close 2026-06-16). Not a live execution price."},
+    "TSLA": {"symbol": "TSLA", "name": "Tesla, Inc.", "exchange": "NASDAQ", "currency": "USD", "last": 339.18, "change": -4.02, "change_pct": -1.17, "prev_close": 343.20, "as_of": "2026-06-16T20:00:00Z", "delay_minutes": 15, "label": "Offline fixture snapshot (as-of close 2026-06-16). Not a live execution price."},
+    "JPM": {"symbol": "JPM", "name": "JPMorgan Chase & Co.", "exchange": "NYSE", "currency": "USD", "last": 291.55, "change": 1.94, "change_pct": 0.67, "prev_close": 289.61, "as_of": "2026-06-16T20:00:00Z", "delay_minutes": 15, "label": "Offline fixture snapshot (as-of close 2026-06-16). Not a live execution price."},
+    "V": {"symbol": "V", "name": "Visa Inc.", "exchange": "NYSE", "currency": "USD", "last": 366.12, "change": 0.71, "change_pct": 0.19, "prev_close": 365.41, "as_of": "2026-06-16T20:00:00Z", "delay_minutes": 15, "label": "Offline fixture snapshot (as-of close 2026-06-16). Not a live execution price."}
   }
 }

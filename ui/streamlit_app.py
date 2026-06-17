@@ -26,6 +26,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.models import AnswerEnvelope, NodeStatus, RunTrace, Verdict  # noqa: E402
+from app.tools.market_data import SYMBOL_META, TOP_TICKERS  # noqa: E402
 from load_pack import load_pack  # noqa: E402
 from ui import stub_backend, theme  # noqa: E402
 
@@ -70,6 +71,16 @@ _BADGE = {
 @st.cache_data(show_spinner=False)
 def _pack_entitlements() -> list[str]:
     return [e["id"] for e in load_pack(POLICY_PACK).get("entitlements", [])]
+
+
+def _run(query: str, entitlements: list[str]) -> tuple[AnswerEnvelope, RunTrace, str]:
+    """Dispatch to the canned demo backend or the real LangGraph graph."""
+    if st.session_state.get("engine") == "live":
+        from app.orchestrator import run as graph_run
+
+        env, trace = graph_run(query, entitlements)
+        return env, trace, "live"
+    return stub_backend.run(query, entitlements)
 
 
 def _dot(trace: RunTrace) -> str:
@@ -118,15 +129,23 @@ def render_advisor() -> None:
         label_visibility="collapsed",
         key="quick",
     )
+    ticker_none = "— or get a live quote: pick a top-50 stock —"
+    ticker_opts = [ticker_none] + [f"{t} · {SYMBOL_META[t][0]}" for t in TOP_TICKERS]
+    picked = ic.selectbox(
+        "Live quote", ticker_opts, label_visibility="collapsed", key="ticker"
+    )
     run = bc.button(
         "Run briefing  ›", type="primary", width="stretch", key="run_advisor"
     )
 
     if run:
-        query = typed.strip() or dict(stub_backend.PRESETS)[quick]
-        env, trace, scenario = stub_backend.run(
-            query, st.session_state.get("entitlements", [])
-        )
+        if typed.strip():
+            query = typed.strip()
+        elif picked != ticker_none:
+            query = f"Pull the latest quote for ({picked.split(' · ')[0]})."
+        else:
+            query = dict(stub_backend.PRESETS)[quick]
+        env, trace, scenario = _run(query, st.session_state.get("entitlements", []))
         st.session_state.result = (env, trace, query, scenario)
 
     result = st.session_state.get("result")
@@ -221,6 +240,29 @@ def render_operator() -> None:
         st.session_state.surface = "advisor"
         st.rerun()
 
+    # engine toggle — Demo (scripted) vs the real LangGraph graph
+    with st.container(border=True):
+        st.markdown("**Run engine**")
+        st.radio(
+            "engine",
+            ["demo", "live"],
+            format_func=lambda x: (
+                "Demo — scripted scenarios (guardrail money shots)"
+                if x == "demo"
+                else "Live graph — real LangGraph run (real RunTrace)"
+            ),
+            horizontal=True,
+            key="engine",
+            label_visibility="collapsed",
+        )
+        if st.session_state.get("engine") == "live":
+            st.caption(
+                "Live = the real `app.orchestrator` graph: orchestrator → retriever "
+                "(entitlement-filtered) + market-data → specialist → gate → synthesizer. "
+                "The gate is the T3 deterministic floor; the support/rubric cascade (T6) "
+                "and advice/realtime guardrails (T5) are pending — so use Demo for those shots."
+            )
+
     result = st.session_state.get("result")
     if not result:
         st.info(
@@ -241,7 +283,7 @@ def render_operator() -> None:
         )
         if st.button("Re-run with these entitlements", key="rerun_op"):
             st.session_state.entitlements = ent
-            new_env, new_trace, scenario = stub_backend.run(query, ent)
+            new_env, new_trace, scenario = _run(query, ent)
             st.session_state.result = (new_env, new_trace, query, scenario)
             st.rerun()
 

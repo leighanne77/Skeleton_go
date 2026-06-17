@@ -29,11 +29,68 @@ from app.models import Quote
 
 # Convenience name/exchange enrichment (the GLOBAL_QUOTE endpoint omits these).
 # Optional — any unknown symbol still resolves, just without the friendly name.
+# Curated top-50 US large-caps (exchange labeled correctly — NASDAQ vs NYSE).
 SYMBOL_META: dict[str, tuple[str, str]] = {
+    # NASDAQ
+    "AAPL": ("Apple Inc.", "NASDAQ"),
     "MSFT": ("Microsoft Corporation", "NASDAQ"),
+    "NVDA": ("NVIDIA Corporation", "NASDAQ"),
+    "AMZN": ("Amazon.com, Inc.", "NASDAQ"),
+    "GOOGL": ("Alphabet Inc.", "NASDAQ"),
+    "META": ("Meta Platforms, Inc.", "NASDAQ"),
+    "TSLA": ("Tesla, Inc.", "NASDAQ"),
+    "AVGO": ("Broadcom Inc.", "NASDAQ"),
+    "COST": ("Costco Wholesale Corporation", "NASDAQ"),
+    "NFLX": ("Netflix, Inc.", "NASDAQ"),
+    "AMD": ("Advanced Micro Devices, Inc.", "NASDAQ"),
+    "ADBE": ("Adobe Inc.", "NASDAQ"),
+    "CSCO": ("Cisco Systems, Inc.", "NASDAQ"),
+    "INTC": ("Intel Corporation", "NASDAQ"),
+    "QCOM": ("QUALCOMM Incorporated", "NASDAQ"),
+    "TXN": ("Texas Instruments Incorporated", "NASDAQ"),
+    "AMGN": ("Amgen Inc.", "NASDAQ"),
+    "PEP": ("PepsiCo, Inc.", "NASDAQ"),
+    "CMCSA": ("Comcast Corporation", "NASDAQ"),
+    "INTU": ("Intuit Inc.", "NASDAQ"),
+    "HON": ("Honeywell International Inc.", "NASDAQ"),
+    "AMAT": ("Applied Materials, Inc.", "NASDAQ"),
+    # NYSE
+    "JPM": ("JPMorgan Chase & Co.", "NYSE"),
+    "V": ("Visa Inc.", "NYSE"),
+    "WMT": ("Walmart Inc.", "NYSE"),
+    "UNH": ("UnitedHealth Group Incorporated", "NYSE"),
+    "XOM": ("Exxon Mobil Corporation", "NYSE"),
+    "MA": ("Mastercard Incorporated", "NYSE"),
+    "ORCL": ("Oracle Corporation", "NYSE"),
+    "HD": ("The Home Depot, Inc.", "NYSE"),
+    "PG": ("The Procter & Gamble Company", "NYSE"),
+    "JNJ": ("Johnson & Johnson", "NYSE"),
+    "BAC": ("Bank of America Corporation", "NYSE"),
+    "ABBV": ("AbbVie Inc.", "NYSE"),
+    "KO": ("The Coca-Cola Company", "NYSE"),
+    "CRM": ("Salesforce, Inc.", "NYSE"),
+    "CVX": ("Chevron Corporation", "NYSE"),
+    "MRK": ("Merck & Co., Inc.", "NYSE"),
+    "WFC": ("Wells Fargo & Company", "NYSE"),
+    "TMO": ("Thermo Fisher Scientific Inc.", "NYSE"),
+    "LIN": ("Linde plc", "NASDAQ"),
+    "ACN": ("Accenture plc", "NYSE"),
+    "MCD": ("McDonald's Corporation", "NYSE"),
+    "ABT": ("Abbott Laboratories", "NYSE"),
+    "DHR": ("Danaher Corporation", "NYSE"),
+    "GE": ("GE Aerospace", "NYSE"),
     "IBM": ("International Business Machines Corp.", "NYSE"),
+    "DIS": ("The Walt Disney Company", "NYSE"),
+    "CAT": ("Caterpillar Inc.", "NYSE"),
+    "VZ": ("Verizon Communications Inc.", "NYSE"),
+    "PFE": ("Pfizer Inc.", "NYSE"),
+    # the synthetic filing issuer (not a market ticker)
     "MRB": ("Meridian Regional Bancorp, Inc.", "NASDAQ"),
 }
+
+# Top-50 US large-caps offered as one-click live quotes (MRB excluded — it's the
+# synthetic filing issuer, not a market ticker). The tool works for ANY ticker.
+TOP_TICKERS: tuple[str, ...] = tuple(t for t in SYMBOL_META if t != "MRB")
 
 
 class QuoteUnavailable(Exception):
