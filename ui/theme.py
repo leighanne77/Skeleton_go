@@ -127,17 +127,24 @@ def inject_css() -> None:
           .stButton > button:hover {{ background: {p["blue"]} !important; }}
           .stButton > button:hover, .stButton > button:hover * {{ color: #ffffff !important; }}
 
-          /* ⚙ gear buttons (open "Show my work"): large, icon-only, ghost (not navy) */
+          /* ⚙ gear buttons (open "Show my work"): big, spinning, icon-only, ghost */
+          @keyframes nw-gear-spin {{ to {{ transform: rotate(360deg); }} }}
           .st-key-to_operator button, .st-key-audit_gear button {{
             background: transparent !important; border: 1px solid {p["hairline"]} !important;
-            font-size: 1.9rem !important; line-height: 1; padding: .1rem .5rem !important;
-            border-radius: 8px;
+            font-size: 2.7rem !important; line-height: 1; padding: 0 .45rem !important;
+            border-radius: 12px;
           }}
           .st-key-to_operator button:hover, .st-key-audit_gear button:hover {{
             background: {p["section"]} !important;
           }}
-          .st-key-to_operator button *, .st-key-audit_gear button * {{
+          .st-key-to_operator button p, .st-key-audit_gear button p {{
             color: {p["navy"]} !important;
+            display: inline-block;
+            animation: nw-gear-spin 4s linear infinite;
+          }}
+          /* spin faster on hover */
+          .st-key-to_operator button:hover p, .st-key-audit_gear button:hover p {{
+            animation-duration: 1s;
           }}
 
           /* section divider */
