@@ -279,7 +279,7 @@ def render_welcome() -> None:
     st.markdown(
         """
         <div class="nw-welcome">
-          <h2>📊 Stock Briefing</h2>
+          <h2>Stock Briefing</h2>
           <p class="lead">Get up to speed on a stock in minutes — before a client conversation.</p>
           <p>📈 <b>Time-stamped quote</b> &nbsp;·&nbsp; 📄 <b>key points from recent SEC filings</b>
           &nbsp;·&nbsp; 🔗 <b>every fact linked to its source</b>.</p>

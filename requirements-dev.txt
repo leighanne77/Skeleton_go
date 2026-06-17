@@ -12,3 +12,6 @@ pre-commit>=3.7             # run ruff + mypy on commit
 #   [tool.ruff.lint]       select = ["E","F","I","B","UP","SIM"]   # incl. isort (I) + bugbear (B)
 #   [tool.mypy]            python_version = "3.11" ; strict = true ; files = "app"
 #   [tool.pytest.ini_options]  testpaths = ["tests"]
+
+# type stubs
+types-PyYAML>=6.0
