@@ -1,0 +1,15 @@
+# Streamlit theme — Munich-Re-inspired (navy + turquoise). Tokens mirror ui/theme.py.
+# Base theme; ui/theme.inject_css() layers the full brand styling on top.
+[theme]
+primaryColor = "#00B2A9"            # turquoise accent (focus, sliders, active)
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F4F6F8"
+textColor = "#1A2329"
+font = "sans serif"
+
+[server]
+headless = true
+fileWatcherType = "none"
+
+[browser]
+gatherUsageStats = false
