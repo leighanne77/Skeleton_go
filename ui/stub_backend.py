@@ -443,14 +443,31 @@ def _ticker_quote(query: str) -> tuple[AnswerEnvelope, RunTrace]:
     )
 
     # SEC filings are pulled alongside the price (EDGAR, when live data is enabled).
+    citations: list[Citation] = []
     filings = edgar.get_recent_filings(quote.symbol)
     if filings:
         answer += "\n\n**Recent SEC filings (EDGAR):**\n" + "\n".join(
             f"- **{f.form}** · {f.filed} — [{f.title}]({f.url})" for f in filings
         )
+        # extractive summary of the latest filing — each highlight is a real span
+        chosen, excerpts = edgar.summarize_latest(quote.symbol, query)
+        if chosen and excerpts:
+            answer += (
+                f"\n\n**Key information from the latest {chosen.form} "
+                f"({chosen.filed}) — cited below:**"
+            )
+            citations = [
+                Citation(
+                    source_id=f"{quote.symbol}_{chosen.form}",
+                    chunk_id=f"edgar::{i}",
+                    doc_title=f"{chosen.title} ({chosen.filed})",
+                    span=ex,
+                )
+                for i, ex in enumerate(excerpts)
+            ]
         retr_node = (
             NodeStatus.DONE,
-            f"EDGAR: {len(filings)} recent filings for {quote.symbol}",
+            f"EDGAR: {len(filings)} filings; {len(citations)} cited excerpts from {quote.symbol}",
         )
     else:
         answer += (
@@ -465,7 +482,7 @@ def _ticker_quote(query: str) -> tuple[AnswerEnvelope, RunTrace]:
     env = AnswerEnvelope(
         status=Verdict.DELIVERED,
         answer_text=answer,
-        citations=[],
+        citations=citations,
         withhold_reason=[],
         audit_ref="audit:#112",
         quote=quote,

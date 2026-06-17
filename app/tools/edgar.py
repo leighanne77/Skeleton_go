@@ -8,14 +8,18 @@ Offline-first: this is a NETWORK call, so it is **opt-in** — enabled only when
 (EDGAR needs no key, only a descriptive User-Agent). Any failure returns `[]` — the
 briefing degrades to quote-only, never crashes.
 
-This first version pulls the filing *list* (form · date · link). Summarizing the
-filing *contents* is a downstream step (the corpus path already does that for the
-worked synthetic issuer).
+Two capabilities: (1) `get_recent_filings` — the recent filing *list* (form · date ·
+link); (2) `summarize_latest` — fetches the latest filing and returns **extractive**
+key excerpts (the top query-relevant sentences). Extractive on purpose: every
+"highlight" is an exact substring of the filing → a resolvable citation span, so the
+governance story holds with no LLM. An LLM synthesis layer can sit on top later.
 """
 
 from __future__ import annotations
 
+import html as _html
 import json
+import re
 import urllib.request
 from functools import lru_cache
 from typing import Any
@@ -92,3 +96,69 @@ def get_recent_filings(
         return _parse_submissions(data, cik, forms, limit)
     except Exception:  # noqa: BLE001 — network/parse failure degrades to quote-only
         return []
+
+
+# ── filing-content summarization (extractive: every highlight is a real span) ──
+_SENTENCE = re.compile(r"[^.!?]*[.!?]")
+_WORD = re.compile(r"[a-z0-9]+")
+
+
+def _strip_html(raw: str) -> str:
+    t = re.sub(r"(?is)<(script|style).*?</\1>", " ", raw)
+    t = re.sub(r"(?s)<[^>]+>", " ", t)
+    return re.sub(r"\s+", " ", _html.unescape(t)).strip()
+
+
+def key_excerpts(text: str, query: str, n: int = 4) -> list[str]:
+    """Top-n query-relevant sentences from a filing — each an exact substring (a
+    resolvable citation span). Deterministic; no LLM. Pure → testable offline."""
+    qterms = {w for w in _WORD.findall(query.lower()) if len(w) >= 4}
+    if not qterms:  # generic filing-salient terms when the query is just a ticker
+        qterms = {
+            "risk",
+            "results",
+            "liquidity",
+            "revenue",
+            "income",
+            "material",
+            "capital",
+        }
+    scored: list[tuple[int, int, str]] = []
+    seen: set[str] = set()
+    for i, m in enumerate(_SENTENCE.finditer(text)):
+        s = m.group().strip()
+        if not (60 <= len(s) <= 320) or s[:80] in seen:
+            continue
+        terms = set(_WORD.findall(s.lower()))
+        score = sum(1 for t in qterms if t in terms)
+        if score > 0:
+            seen.add(s[:80])
+            scored.append((-score, i, s))  # by score desc, then document order
+    scored.sort()
+    return [s for _, _, s in scored[:n]]
+
+
+def fetch_filing_text(url: str, max_chars: int = 400_000, timeout: float = 30.0) -> str:
+    """Fetch a filing's primary document and strip it to clean text. '' on failure."""
+    try:
+        req = urllib.request.Request(url, headers=_UA)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310
+            raw = resp.read().decode("utf-8", "ignore")
+    except Exception:  # noqa: BLE001 — network/decode failure → no summary
+        return ""
+    return _strip_html(raw)[:max_chars]
+
+
+def summarize_latest(
+    ticker: str, query: str, prefer: tuple[str, ...] = ("10-Q", "10-K", "8-K")
+) -> tuple[FilingRef | None, list[str]]:
+    """Pick the most recent preferred filing, fetch it, return (ref, key excerpts).
+    (None, []) if disabled or unavailable."""
+    if not enabled():
+        return None, []
+    filings = get_recent_filings(ticker, forms=prefer, limit=8)
+    chosen = next((f for form in prefer for f in filings if f.form == form), None)
+    if chosen is None:
+        return None, []
+    text = fetch_filing_text(chosen.url)
+    return chosen, key_excerpts(text, query) if text else []

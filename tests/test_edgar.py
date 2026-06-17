@@ -7,7 +7,7 @@ a live call. The network path is gated behind `use_real_market_data` (enabled())
 from __future__ import annotations
 
 import app.tools.edgar as edgar
-from app.tools.edgar import _parse_submissions
+from app.tools.edgar import _parse_submissions, _strip_html, key_excerpts
 
 # Minimal EDGAR submissions shape (data.sec.gov/submissions/CIK##########.json).
 SAMPLE = {
@@ -63,6 +63,26 @@ def test_parse_submissions_respects_limit() -> None:
 
 
 def test_disabled_offline_returns_empty() -> None:
-    # use_real_market_data defaults False in tests → no network, empty list
+    # conftest forces EDGAR off → no network, empty results
     assert edgar.enabled() is False
     assert edgar.get_recent_filings("MSFT") == []
+    assert edgar.summarize_latest("MSFT", "liquidity risk") == (None, [])
+
+
+def test_strip_html() -> None:
+    raw = "<html><style>x{}</style><body><p>Net&nbsp;income rose.</p><script>z()</script></body></html>"
+    assert _strip_html(raw) == "Net income rose."
+
+
+def test_key_excerpts_returns_relevant_real_spans() -> None:
+    text = (
+        "The Company sells software. "
+        "Our liquidity position remains strong with ample cash reserves on hand. "
+        "Risk factors include competition from larger firms in the cloud market segment. "
+        "The cafeteria menu changed last quarter for employees."
+    )
+    out = key_excerpts(text, "liquidity and risk factors", n=2)
+    assert len(out) == 2
+    assert all(s in text for s in out)  # every excerpt is an exact substring (citable)
+    assert any("liquidity" in s.lower() for s in out)
+    assert all("cafeteria" not in s.lower() for s in out)  # off-topic excluded
