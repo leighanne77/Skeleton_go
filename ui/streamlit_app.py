@@ -116,7 +116,7 @@ def render_advisor() -> None:
     )
     st.divider()
 
-    ic, bc = st.columns([5, 2])
+    ic, bc, gc = st.columns([5, 2, 1], vertical_alignment="center")
     typed = ic.text_input(
         "Type a question",
         placeholder="Type your own question — e.g. Summarize MRB's latest 10-K liquidity risk",
@@ -134,11 +134,10 @@ def render_advisor() -> None:
         ticker_opts,
         key="ticker",
     )
-    bc.write("")
     run = bc.button(
         "Run briefing  ›", type="primary", width="stretch", key="run_advisor"
     )
-    with bc:
+    with gc:
         if st.button(
             "⚙",
             key="audit_gear",
