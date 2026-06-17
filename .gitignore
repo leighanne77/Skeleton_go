@@ -26,3 +26,6 @@ data/chroma/
 # os / editor
 .DS_Store
 .vscode/
+
+# scratch / reference docs (not part of the deliverable)
+Docs/Other/
