@@ -11,15 +11,16 @@ from __future__ import annotations
 
 import re
 
+from app.guardrails import scan_injection
 from app.models import AnswerEnvelope, Citation, Claim, Quote, RetrievedChunk, Verdict
 
 _WORD = re.compile(r"[a-z0-9]+")
 _SENT_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
 
-def _best_sentence(text: str, query: str) -> str:
-    """The substantive sentence in the chunk most relevant to the query (skips
-    title/heading lines). Falls back to the first real sentence."""
+def _top_sentences(text: str, query: str, k: int = 3) -> list[str]:
+    """The k substantive sentences in the chunk most relevant to the query (skips
+    title/heading lines), in document order. Each is a resolvable citation span."""
     qterms = {w for w in _WORD.findall(query.lower()) if len(w) >= 3}
     candidates: list[str] = []
     for line in text.splitlines():
@@ -27,31 +28,43 @@ def _best_sentence(text: str, query: str) -> str:
         if not s or s.startswith("#") or s.startswith("**"):
             continue
         candidates.extend(p.strip() for p in _SENT_SPLIT.split(s))
-    candidates = [s for s in candidates if 40 <= len(s) <= 400]
+    # deliver-with-exclusion: drop any sentence carrying an instruction-injection
+    # (the injected command is excluded from the answer, never followed).
+    candidates = [s for s in candidates if 40 <= len(s) <= 400 and not scan_injection(s)]
     if not candidates:
-        return text.strip()[:400]
-    scored = max(
-        candidates,
-        key=lambda s: sum(1 for t in qterms if t in s.lower()),
+        return [text.strip()[:400]]
+    scored = sorted(
+        (
+            (sum(1 for t in qterms if t in s.lower()), i, s)
+            for i, s in enumerate(candidates)
+        ),
+        key=lambda t: (-t[0], t[1]),
     )
-    return scored
+    chosen = [s for score, _, s in scored[:k] if score > 0] or [scored[0][2]]
+    order = {s: candidates.index(s) for s in chosen}
+    return sorted(chosen, key=lambda s: order[s])  # back to document order
 
 
 def make_candidate(
     retrieved: list[RetrievedChunk], query: str = ""
 ) -> tuple[str, list[Claim]]:
-    """SPECIALIST: draft a candidate answer + a cited claim from the top chunk —
-    the sentence most relevant to the query (a resolvable span)."""
+    """SPECIALIST: draft a candidate answer + cited claims from the top chunk — the
+    sentences most relevant to the query (each a resolvable span)."""
     top = retrieved[0]
-    span = _best_sentence(top.text, query)
-    citation = Citation(
-        source_id=top.source_id,
-        chunk_id=top.chunk_id,
-        doc_title=top.doc_title,
-        span=span,
-    )
-    answer = f"{span}"
-    return answer, [Claim(text=span, citation=citation)]
+    spans = _top_sentences(top.text, query)
+    claims = [
+        Claim(
+            text=span,
+            citation=Citation(
+                source_id=top.source_id,
+                chunk_id=top.chunk_id,
+                doc_title=top.doc_title,
+                span=span,
+            ),
+        )
+        for span in spans
+    ]
+    return " ".join(spans), claims
 
 
 def finalize(

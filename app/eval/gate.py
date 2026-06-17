@@ -16,6 +16,7 @@ citations don't resolve (Trap 3). PII/injection are handled guard-first upstream
 
 from __future__ import annotations
 
+from app import guardrails
 from app.eval import judge
 from app.models import AgentState, FailureReason, GateResult, GateStage
 
@@ -23,6 +24,21 @@ from app.models import AgentState, FailureReason, GateResult, GateStage
 def evaluate(state: AgentState, query: str | None = None) -> GateResult:
     reasons: list[FailureReason] = []
     stage = GateStage.DETERMINISTIC_FLOOR
+
+    # ── input-side enforcement: prohibited rules + unentitled sensitive classes ──
+    # (the BFSI signatures as DATA: advice, realtime quote, MNPI/SAR when unentitled)
+    violations = guardrails.query_violations(
+        state.request.query,
+        state.request.principal.entitlements,
+        state.request.policy_pack,
+    )
+    if violations:
+        return GateResult(
+            stage=GateStage.GUARDRAILS,
+            passed=False,
+            detail={"query_violations": violations},
+            failure_reasons=[FailureReason.GUARDRAIL_BLOCK],
+        )
 
     # ── guard-first results surfaced at the gate ──────────────────────────────
     if state.guardrails is not None:
@@ -43,8 +59,10 @@ def evaluate(state: AgentState, query: str | None = None) -> GateResult:
             if not span or span not in corpus:
                 reasons.append(FailureReason.UNGROUNDED)
                 break
-        if judge.conflicting([c.text for c in state.retrieved]):
-            reasons.append(FailureReason.UNGROUNDED)  # conflicting sources → withhold
+        # NOTE: judge.conflicting() exists and is tested, but is intentionally NOT
+        # wired here — a lexical conflict heuristic false-positives on related docs
+        # (an issuer's own 10-K + 10-Q). Gating on conflict needs the NLI tier; until
+        # then conflicting-sources stays a flagged-not-gated signal (KNOWN_ISSUES T10).
 
         # ── 2. stage-2 support (only if the floor held) ──────────────────────
         if not reasons:

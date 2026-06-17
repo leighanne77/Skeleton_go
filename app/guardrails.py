@@ -73,6 +73,44 @@ def detect_sensitive(text: str, pack_name: str | None = None) -> list[str]:
     return hits
 
 
+def query_violations(
+    query: str, entitlements: list[str], pack_name: str | None = None
+) -> list[str]:
+    """Input-side enforcement (pack-driven): a query that trips a prohibited rule's
+    keyword signal, or targets a `block_unless_entitled` class the principal isn't
+    cleared for, must be routed to a human — regardless of what retrieval finds.
+
+    Catches the BFSI signatures from the pack as DATA: no_personalized_advice,
+    no_realtime_quote, MNPI/SAR tipping-off when unentitled.
+    """
+    pack = get_pack(pack_name or get_settings().policy_pack)
+    low = query.lower()
+    ent = set(entitlements)
+    out: list[str] = []
+
+    for rule in pack.get("prohibited", []):
+        keywords = (rule.get("signals") or {}).get("keywords") or []
+        if any(str(k).lower() in low for k in keywords):
+            out.append(str(rule["id"]))
+
+    for c in pack.get("sensitive_classes", []):
+        req = c.get("requires_entitlement")
+        if c.get("handling") == "block_unless_entitled" and req and str(req) not in ent:
+            # only MULTI-WORD keywords on the query side — a bare token like "SAR" or
+            # "MNPI" appears in legit compliance Q&A ("when must a SAR be filed?"), so
+            # gating on it over-blocks. Disclosure-specific phrases ("deal terms",
+            # "suspicious activity report") are the safe query signal; the precise
+            # tipping-off-vs-Q&A distinction is the intent-classifier tier (KNOWN_ISSUES).
+            keywords = [
+                str(k)
+                for k in c.get("detect", {}).get("keywords", [])
+                if len(str(k).split()) >= 2
+            ]
+            if any(k.lower() in low for k in keywords):
+                out.append(f"unentitled:{c['name']}")
+    return out
+
+
 def screen(text: str, pack_name: str | None = None) -> tuple[str, GuardrailResult]:
     """Guard-first: redact PII, flag injection + sensitive classes. Returns clean text."""
     clean, actions = redact_pii(text, pack_name)

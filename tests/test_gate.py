@@ -70,15 +70,18 @@ def test_rejects_unsupported_span() -> None:
     assert FailureReason.SUPPORT_FAILED in res.failure_reasons
 
 
-def test_conflicting_sources_withholds() -> None:
+def test_conflicting_detector_flags_contradiction() -> None:
+    # judge.conflicting() catches a clear contradiction (shared phrase, one negated)…
     a = "All Q1 supervision reviews of representative recommendations were completed within the required thirty-day window under the policy."
     b = "Several Q1 supervision reviews of representative recommendations were not completed within the required thirty-day window under the policy."
+    assert judge.conflicting([a, b]) is True
+    # …but it is intentionally NOT gated (a lexical heuristic false-positives on related
+    # docs like an issuer's own 10-K + 10-Q), so a grounded+supported claim still passes.
     res = evaluate(
         _state([_chunk("a", a), _chunk("b", b)], a, [_claim(a, "a")]),
-        "supervision reviews window",
+        "supervision reviews completed within window",
     )
-    assert not res.passed
-    assert judge.conflicting([a, b])
+    assert res.passed
 
 
 def test_empty_retrieval_withholds() -> None:

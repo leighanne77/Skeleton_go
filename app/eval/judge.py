@@ -41,8 +41,11 @@ def supports(span: str, claim: str, threshold: float = 0.6) -> bool:
     return covered >= threshold
 
 
-def relevant(answer: str, query: str, threshold: float = 0.2) -> bool:
-    """Rubric: does the answer address the query?"""
+def relevant(answer: str, query: str, threshold: float = 0.08) -> bool:
+    """Rubric (lenient deterministic proxy): does the answer share the query's key
+    content? Conversational/specific queries give a short extractive answer low
+    lexical overlap, so the bar is low here; STRICT relevance is the cross-family
+    LLM-rubric tier that swaps in behind this call."""
     q = _terms(query)
     if not q:
         return True
