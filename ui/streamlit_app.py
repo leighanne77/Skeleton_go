@@ -222,9 +222,18 @@ def _render_answer(env: AnswerEnvelope) -> None:
                 "- A failed / uncertain / out-of-bounds answer is **structurally unable** to be delivered\n"
                 "- It was routed to a human reviewer and the decision was **audited**"
             )
-    st.caption(
-        f"Audit reference `{env.audit_ref}` · tamper-evident chain in ⚙ Show my work."
+    ac, gc = st.columns([11, 1])
+    ac.caption(
+        f"Audit reference `{env.audit_ref}` · tamper-evident chain in Show my work →"
     )
+    with gc:
+        if st.button(
+            "⚙",
+            key="audit_gear",
+            help="Show my work — open the technical view: the orchestration graph, the gate stages, and the audit chain",
+        ):
+            st.session_state.surface = "operator"
+            st.rerun()
 
 
 # ── OPERATOR ("Show my work") surface ─────────────────────────────────────────

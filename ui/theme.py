@@ -127,14 +127,18 @@ def inject_css() -> None:
           .stButton > button:hover {{ background: {p["blue"]} !important; }}
           .stButton > button:hover, .stButton > button:hover * {{ color: #ffffff !important; }}
 
-          /* ⚙ gear button (key="to_operator"): large, icon-only, ghost (not navy) */
-          .st-key-to_operator button {{
+          /* ⚙ gear buttons (open "Show my work"): large, icon-only, ghost (not navy) */
+          .st-key-to_operator button, .st-key-audit_gear button {{
             background: transparent !important; border: 1px solid {p["hairline"]} !important;
             font-size: 1.9rem !important; line-height: 1; padding: .1rem .5rem !important;
             border-radius: 8px;
           }}
-          .st-key-to_operator button:hover {{ background: {p["section"]} !important; }}
-          .st-key-to_operator button * {{ color: {p["navy"]} !important; }}
+          .st-key-to_operator button:hover, .st-key-audit_gear button:hover {{
+            background: {p["section"]} !important;
+          }}
+          .st-key-to_operator button *, .st-key-audit_gear button * {{
+            color: {p["navy"]} !important;
+          }}
 
           /* section divider */
           hr {{ border-color: {p["hairline"]}; }}
