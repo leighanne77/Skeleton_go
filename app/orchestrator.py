@@ -70,14 +70,14 @@ def n_market_data(state: AgentState) -> dict[str, object]:
 def n_specialist(state: AgentState) -> dict[str, object]:
     if not state.retrieved:
         return {}
-    answer, claims = synthesizer.make_candidate(state.retrieved)
+    answer, claims = synthesizer.make_candidate(state.retrieved, state.request.query)
     # guard-first: PII-screen the draft + flag any injection in the retrieved spans
     clean, gr = guardrails.screen(answer, state.request.policy_pack)
     return {"candidate_answer": clean, "claims": claims, "guardrails": gr}
 
 
 def n_gate(state: AgentState) -> dict[str, object]:
-    return {"gate_results": [gate_mod.evaluate(state)]}
+    return {"gate_results": [gate_mod.evaluate(state, state.request.query)]}
 
 
 def _route_after_gate(state: AgentState) -> str:
