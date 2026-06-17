@@ -118,24 +118,29 @@ def render_advisor() -> None:
 
     ic, bc = st.columns([5, 2])
     typed = ic.text_input(
-        "Ask about a stock",
-        placeholder="e.g. Summarize MRB's latest 10-K liquidity risk",
-        label_visibility="collapsed",
+        "Type a question",
+        placeholder="Type your own question — e.g. Summarize MRB's latest 10-K liquidity risk",
         key="q",
     )
     quick = ic.selectbox(
-        "Quick tasks",
+        "…or run a demo scenario (synthetic MRB filings + governance shots)",
         [lbl for lbl, _ in stub_backend.PRESETS],
-        label_visibility="collapsed",
         key="quick",
     )
-    ticker_none = "— or get a live quote: pick a top-50 stock —"
+    ticker_none = "— none —"
     ticker_opts = [ticker_none] + [f"{t} · {SYMBOL_META[t][0]}" for t in TOP_TICKERS]
     picked = ic.selectbox(
-        "Live quote", ticker_opts, label_visibility="collapsed", key="ticker"
+        "…or pick a LIVE stock — top 50 US (real quote + recent SEC filings)",
+        ticker_opts,
+        key="ticker",
     )
+    bc.write("")
     run = bc.button(
         "Run briefing  ›", type="primary", width="stretch", key="run_advisor"
+    )
+    ic.caption(
+        "Priority: your typed question → the live stock (if picked) → the demo scenario. "
+        "A live stock fetches its SEC filings from EDGAR — that can take a few seconds."
     )
 
     if run:
@@ -145,7 +150,8 @@ def render_advisor() -> None:
             query = f"Pull the latest quote for ({picked.split(' · ')[0]})."
         else:
             query = dict(stub_backend.PRESETS)[quick]
-        env, trace, scenario = _run(query, st.session_state.get("entitlements", []))
+        with st.spinner("Pulling the quote and recent SEC filings…"):
+            env, trace, scenario = _run(query, st.session_state.get("entitlements", []))
         st.session_state.result = (env, trace, query, scenario)
 
     result = st.session_state.get("result")
