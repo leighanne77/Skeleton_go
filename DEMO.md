@@ -50,12 +50,15 @@ compliance reviewer.**
 - **Say:** "An advisor can't get a buy/sell recommendation out of it — Reg BI
   suitability is a human's call."
 
-## 5 · Live data — quote + real SEC filings (30 sec)
-**Third dropdown → pick MSFT → Run** (wait for the spinner).
-- **Show:** the quote + **Recent SEC filings (EDGAR)** with live sec.gov links + **cited
-  highlights** from the latest 10-Q.
-- **Say:** "MSFT is just an example — the tool is ticker-agnostic across the top 50;
-  filings come live from SEC EDGAR."
+## 5 · Live data — real-time quote + real SEC filings (30 sec)
+**Third dropdown → pick MSFT → Run** (wait for the spinner). Feel free to vary the
+ticker live (AAPL, NVDA, JPM…) — Finnhub's free tier is 60 calls/min, so no throttling.
+- **Show:** the **real-time quote** (labeled *"Real-time market quote via Finnhub —
+  informational, not an execution price"*) + **Recent SEC filings (EDGAR)** with live
+  sec.gov links + **cited highlights** from the latest filing.
+- **Say:** "Live price *and* live filings — MSFT is just an example; the tool is
+  ticker-agnostic across the top 50. Still labeled informational, and a trade-now ask
+  still routes — real-time doesn't mean execution-grade."
 
 ## 6 · Show my work — the glass box (30 sec) — *for the technical reviewer*
 Click the spinning **⚙** → the **orchestration graph** recolored by the real run · the
@@ -70,10 +73,11 @@ End on **`Docs/one_pager.md`** — the plain-language page with no jargon:
 ---
 
 ## ⚠️ Two things to know live
-- **MSFT live quote:** Alpha Vantage's free tier throttles rapid clicks — if you re-run
-  fast it gracefully shows the **labeled fixture** instead of the live price (by design,
-  fail-soft). For rock-solid real-time, set `MARKET_DATA_PROVIDER=finnhub` (free key).
-  The **EDGAR filings always pull live.**
+- **Live data is on (Finnhub + EDGAR).** Quotes are **real-time** (Finnhub, 60/min — no
+  throttling); SEC filings pull live from EDGAR. If the network ever hiccups, the quote
+  **fails soft** to a clearly-labeled fixture rather than erroring. Run it with:
+  `USE_REAL_MARKET_DATA=true MARKET_DATA_PROVIDER=finnhub MARKET_DATA_API_KEY=<token>`.
+  *(Alpha Vantage is the alternative provider — free but delayed/EOD and rate-limited.)*
 - **Keep the engine on Demo** for the scripted money shots; the Live-graph engine runs
   the real pipeline (great for the glass box, but the canned scenarios are the polished
   narrative).
