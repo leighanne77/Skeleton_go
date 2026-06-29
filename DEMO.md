@@ -62,9 +62,17 @@ ticker live (AAPL, NVDA, JPM…) — Finnhub's free tier is 60 calls/min, so no 
 
 ## 6 · Show my work — the glass box (30 sec) — *for the technical reviewer*
 Click the spinning **⚙** → the **orchestration graph** recolored by the real run · the
-**gate stages** · the **entitlement decision** · the **verifiable audit chain**.
-- **Say:** "Nothing here is a slide — it's a read-out of the actual run. The synthesizer
-  is reachable *only* on the gate's pass edge."
+**two parallel analyst agents** (filings-analyst ‖ market-context) fanning out · the
+**gate stages** (with the live cross-family judge tier) · the **entitlement decision** ·
+the **verifiable audit chain**.
+- **Say:** "Nothing here is a slide — it's a read-out of the actual run. Two analyst
+  agents run *concurrently* and propose; the gate adjudicates their findings; the one
+  synthesizer is reachable *only* on the gate's pass edge. Parallel agents propose, the
+  single writer disposes."
+- **If a Live run withholds a clean-looking query, pre-empt it:** "That's the gate doing
+  its job, not a glitch — on the live path the relevance floor genuinely withheld a
+  weak answer and routed it for review. It fails *closed*. The scripted shots run on
+  Demo so the narrative stays tight; Live is here to prove the gate really gates."
 
 ## 7 · The closer (15 sec)
 End on **`Docs/one_pager.md`** — the plain-language page with no jargon:
@@ -83,9 +91,10 @@ End on **`Docs/one_pager.md`** — the plain-language page with no jargon:
   narrative).
 
 ## The eight rubric items, one line each (if asked)
-1. **Orchestration** — LangGraph supervisor → retriever + market-data → specialist →
-   gate → synthesizer (pass-edge only).
-2. **LLM eval** — control-plane gate (floor → support → rubric) + the golden harness
+1. **Orchestration** — LangGraph supervisor → retriever + market-data → **two parallel
+   analyst agents** (real fan-out) → aggregate → gate → synthesizer (pass-edge only).
+2. **LLM eval** — control-plane gate (floor → support → rubric), with a **live
+   cross-family judge** (OpenAI judging Claude) at stage-2 support + the golden harness
    scoreboard.
 3. **Embeddings** — OpenAI `text-embedding-3-small` (keyless Nomic/keyword fallback).
 4. **Vector DB** — ChromaDB behind a thin retriever interface.
