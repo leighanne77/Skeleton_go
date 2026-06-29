@@ -46,16 +46,23 @@ _LABELS = {
     "orchestrator": "Orchestrator",
     "retriever": "Retriever (tool)",
     "market_data": "Market-data (tool)",
-    "specialist": "Filings specialist",
+    "filings-analyst": "Filings analyst",
+    "market-context": "Market-context analyst",
+    "aggregate": "Aggregate findings",
     "gate": "Control-plane GATE",
     "synthesizer": "Synthesizer",
 }
 _EDGES = [
     ("orchestrator", "retriever"),
     ("orchestrator", "market_data"),
-    ("retriever", "specialist"),
-    ("specialist", "gate"),
-    ("market_data", "gate"),
+    # parallel fan-out: two analyst agents run concurrently off retrieval
+    ("retriever", "filings-analyst"),
+    ("retriever", "market-context"),
+    # fan-in: aggregate the analysts' findings + the market-data tool
+    ("filings-analyst", "aggregate"),
+    ("market-context", "aggregate"),
+    ("market_data", "aggregate"),
+    ("aggregate", "gate"),
     ("gate", "synthesizer"),
 ]
 _BADGE = {
@@ -97,8 +104,8 @@ def _dot(trace: RunTrace) -> str:
         n = by_id.get(nid)
         status = n.status if n else NodeStatus.PENDING
         label = _LABELS[nid] + (f"\\n{_BADGE[status]} {status.value}" if n else "")
-        out.append(f'  {nid} [label="{label}" fillcolor="{_FILL[status]}"];')
-    out += [f"  {a} -> {b};" for a, b in _EDGES]
+        out.append(f'  "{nid}" [label="{label}" fillcolor="{_FILL[status]}"];')
+    out += [f'  "{a}" -> "{b}";' for a, b in _EDGES]
     out.append("}")
     return "\n".join(out)
 
@@ -269,9 +276,11 @@ def render_operator() -> None:
         if st.session_state.get("engine") == "live":
             st.caption(
                 "Live = the real `app.orchestrator` graph: orchestrator → retriever "
-                "(entitlement-filtered) + market-data → specialist → gate → synthesizer. "
-                "The gate is the T3 deterministic floor; the support/rubric cascade (T6) "
-                "and advice/realtime guardrails (T5) are pending — so use Demo for those shots."
+                "(entitlement-filtered) + market-data → **two parallel analyst agents** "
+                "(filings-analyst ‖ market-context, real LangGraph fan-out) → aggregate → "
+                "gate → synthesizer. The gate runs the full floor → support → rubric "
+                "cascade; stage-2 support is a cross-family judge (OpenAI) when keyed, "
+                "deterministic otherwise. One synthesizer, reachable only on the pass edge."
             )
 
     result = st.session_state.get("result")

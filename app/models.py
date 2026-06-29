@@ -18,7 +18,9 @@ Two citation shapes on purpose:
 
 from __future__ import annotations
 
+import operator
 from enum import StrEnum
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
@@ -106,6 +108,17 @@ class Claim(BaseModel):
     citation: Citation | None = None
     verdict: ClaimVerdict | None = None
     support_score: float | None = None
+
+
+class Finding(BaseModel):
+    """A PROPOSAL from one upstream analyst agent — a grounded, cited claim plus the
+    role that produced it. Parallel analysts emit Findings concurrently (merged via a
+    reducer on AgentState.findings); the aggregate node unions them into the single
+    candidate the gate adjudicates. Analysts PROPOSE; the synthesizer DISPOSES."""
+
+    agent: str  # the analyst role that produced this (e.g. "filings-analyst")
+    claim: Claim
+    rationale: str = ""  # why this analyst surfaced it (operator-view colour)
 
 
 class RetrievedChunk(BaseModel):
@@ -216,6 +229,9 @@ class AgentState(BaseModel):
 
     request: RunRequest
     retrieved: list[RetrievedChunk] = Field(default_factory=list)
+    # findings carries a REDUCER so the parallel analyst agents can write concurrently
+    # (LangGraph fan-out merges their proposals with operator.add — no last-writer-wins).
+    findings: Annotated[list[Finding], operator.add] = Field(default_factory=list)
     candidate_answer: str | None = None
     claims: list[Claim] = Field(default_factory=list)
     quote: Quote | None = None

@@ -1,5 +1,9 @@
 """tests/test_graph.py — T3: the governed graph traverses correctly and the
 synthesizer is reachable ONLY on the gate's pass edge (R1).
+
+The PROPOSE layer is two parallel analyst agents (filings-analyst ‖ market-context);
+they feed the gate, but the single synthesizer on the pass edge stays fenced — the
+invariant test below is exactly the test the parallelism must NOT break.
 """
 
 from __future__ import annotations
@@ -32,9 +36,17 @@ def test_synthesizer_unreachable_on_fail() -> None:
     assert _node(trace, "gate") == NodeStatus.WITHHELD
 
 
-def test_traverses_orchestrator_to_gate() -> None:
+def test_traverses_orchestrator_through_parallel_agents_to_gate() -> None:
     _env, trace = run(
         "What standard governs broker-dealer recommendations to retail customers?"
     )
-    for nid in ("orchestrator", "retriever", "specialist", "gate"):
+    # both parallel analyst agents ran and the aggregate unioned their findings
+    for nid in (
+        "orchestrator",
+        "retriever",
+        "filings-analyst",
+        "market-context",
+        "aggregate",
+        "gate",
+    ):
         assert _node(trace, nid) == NodeStatus.DONE

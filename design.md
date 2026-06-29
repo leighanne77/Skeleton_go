@@ -54,6 +54,20 @@ A **governed decision agent over regulated documents**: it answers a regulated u
 
 Implement the graph in **LangGraph**. The synthesizer node must be reachable **only** on the gate's pass edge — a failed answer cannot structurally reach it.
 
+> **Rebuild note (parallel agents PROPOSE, the one synthesizer DISPOSES).** The two
+> swappable workers above (`SPECIALIST_A`/`SPECIALIST_B`) are now **real concurrent
+> analyst agents** — `filings-analyst` ‖ `market-context` — running as a genuine
+> LangGraph fan-out (`app/agents/analysts.py`): distinct `ThreadPoolExecutor` threads,
+> their cited **Findings** merged through a reducer on `AgentState.findings`
+> (`Annotated[list, operator.add]`), unioned by an `aggregate` node into the one
+> candidate the gate adjudicates. Each analyst calls Claude when keyed and falls back to
+> a deterministic extractor offline. The **stage-2 support** judge is now a **live
+> cross-family LLM** (OpenAI judging Claude's claims) when keyed, deterministic otherwise
+> (`app/eval/judge.py::supports`, `judge_mode()`). The invariant is untouched: still ONE
+> synthesizer on the gate's pass edge — parallelism lives strictly *upstream* of the gate,
+> so `test_synthesizer_unreachable_on_fail` holds. Full rationale + evidence:
+> `Docs/Defense_And_Rebuild.md`.
+
 ---
 
 ## 2 · Tooling — what we use and what to install

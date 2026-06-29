@@ -37,10 +37,19 @@ FIXED_TOPOLOGY = [
     "orchestrator",
     "retriever",
     "market_data",
-    "specialist",
+    "filings-analyst",
+    "market-context",
+    "aggregate",
     "gate",
     "synthesizer",
 ]
+
+# the two parallel analyst agents + the aggregate, marked SKIPPED for quote-only flows
+_ANALYSTS_SKIPPED = {
+    "filings-analyst": (NodeStatus.SKIPPED, "no filing finding"),
+    "market-context": (NodeStatus.SKIPPED, "no filing finding"),
+    "aggregate": (NodeStatus.SKIPPED, "quote-only briefing"),
+}
 
 COMPLIANCE_ROUTE = "human:compliance-officer"
 
@@ -129,7 +138,7 @@ def _briefing(
                     NodeStatus.DONE,
                     "MRB delayed snapshot, as-of 2026-06-16 (labeled)",
                 ),
-                "specialist": (NodeStatus.DONE, "filings-summarizer"),
+                "aggregate": (NodeStatus.DONE, "2 agents → 1 candidate"),
             }
         ),
         gate_stages=[
@@ -337,7 +346,7 @@ def _mnpi(entitlements: list[str]) -> tuple[AnswerEnvelope, RunTrace]:
                         NodeStatus.DONE,
                         "1 chunk · top = mnpi_dealbook 0.88",
                     ),
-                    "specialist": (NodeStatus.DONE, "compliance"),
+                    "aggregate": (NodeStatus.DONE, "2 agents → 1 candidate"),
                 }
             ),
             gate_stages=[
@@ -416,7 +425,7 @@ def _ticker_quote(query: str) -> tuple[AnswerEnvelope, RunTrace]:
                         NodeStatus.SKIPPED,
                         f"{ticker or '?'} not in offline fixture",
                     ),
-                    "specialist": (NodeStatus.SKIPPED, "quote-only briefing"),
+                    **_ANALYSTS_SKIPPED,
                 }
             ),
             gate_stages=[
@@ -492,7 +501,7 @@ def _ticker_quote(query: str) -> tuple[AnswerEnvelope, RunTrace]:
             {
                 "retriever": retr_node,
                 "market_data": (NodeStatus.DONE, f"{quote.symbol} quote — {src}"),
-                "specialist": (NodeStatus.SKIPPED, "quote + filing-list briefing"),
+                **_ANALYSTS_SKIPPED,
             }
         ),
         gate_stages=[

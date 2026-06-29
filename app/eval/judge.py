@@ -5,15 +5,19 @@ Deterministic and offline by default:
   • relevant(answer, query) — the answer must address the question (rubric: relevance).
   • conflicting(chunks)    — flag mutually contradictory sources (never silently pick).
 
-These are the seams for the production tiers: a **cross-family** LLM judge (OpenAI,
-a different family than the Claude generator — so a model never grades its own output
-unchecked) and a DeBERTa-class NLI model. Keeping the defaults deterministic makes the
-test suite hermetic and the demo keyless; the LLM tier swaps in behind the same calls.
+`supports` is the gate's stage-2 SUPPORT tier and is now wired to a **live cross-family
+LLM judge** (OpenAI — a different family than the Claude generator, so a model never
+grades its own output unchecked) when `USE_REAL_LLM` + an OpenAI key are set; it falls
+back to the deterministic lexical proxy otherwise, so the test suite stays hermetic and
+the demo runs keyless. (`relevant`/`conflicting` keep their deterministic proxies; the
+DeBERTa-class NLI tier swaps in behind the same calls.)
 """
 
 from __future__ import annotations
 
 import re
+
+from app.agents import llm
 
 _WORD = re.compile(r"[a-z0-9]+")
 _STOP = frozenset(
@@ -32,13 +36,36 @@ def _terms(s: str) -> set[str]:
     return {w for w in _WORD.findall(s.lower()) if len(w) >= 3 and w not in _STOP}
 
 
-def supports(span: str, claim: str, threshold: float = 0.6) -> bool:
-    """Does the cited span entail the claim? Lexical-coverage proxy for NLI entailment."""
+_JUDGE_SYSTEM = (
+    "You are an independent entailment judge for a regulated decision agent. Given a "
+    "SPAN of source text and a CLAIM, decide whether the span ENTAILS the claim (the "
+    "claim is fully supported by the span, no outside knowledge). Answer with exactly "
+    "one word: YES or NO. Default to NO if unsure."
+)
+
+
+def judge_mode() -> str:
+    """Which support tier is live — for the operator/glass-box read-out."""
+    return "cross-family LLM (openai)" if llm.openai_enabled() else "deterministic"
+
+
+def _supports_lexical(span: str, claim: str, threshold: float) -> bool:
     claim_terms = _terms(claim)
     if not claim_terms:
         return False
     covered = sum(1 for t in claim_terms if t in _terms(span)) / len(claim_terms)
     return covered >= threshold
+
+
+def supports(span: str, claim: str, threshold: float = 0.6) -> bool:
+    """Does the cited span entail the claim? Live cross-family LLM judge (OpenAI) when
+    keyed — a model never grades its own output unchecked — else the deterministic
+    lexical-coverage proxy for NLI entailment. Fails soft to lexical on any judge error."""
+    if llm.openai_enabled():
+        verdict = llm.openai_text(_JUDGE_SYSTEM, f"SPAN:\n{span}\n\nCLAIM:\n{claim}")
+        if verdict is not None:
+            return verdict.strip().lower().startswith("y")
+    return _supports_lexical(span, claim, threshold)
 
 
 def relevant(answer: str, query: str, threshold: float = 0.08) -> bool:

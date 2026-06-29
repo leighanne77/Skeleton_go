@@ -20,6 +20,9 @@ from app import guardrails
 from app.eval import judge
 from app.models import AgentState, FailureReason, GateResult, GateStage
 
+# re-export so callers (orchestrator trace, UI) can read the live support tier
+judge_mode = judge.judge_mode
+
 
 def evaluate(state: AgentState, query: str | None = None) -> GateResult:
     reasons: list[FailureReason] = []
@@ -84,6 +87,7 @@ def evaluate(state: AgentState, query: str | None = None) -> GateResult:
         "retrieved": len(state.retrieved),
         "claims": len(state.claims),
         "stage_reached": stage.value,
+        "support_judge": judge.judge_mode(),
     }
     return GateResult(
         stage=stage,
