@@ -271,7 +271,7 @@ class NodeStatus(StrEnum):
 
 
 class NodeTrace(BaseModel):
-    id: str  # fixed-topology node id: orchestrator|retriever|market_data|specialist|gate|synthesizer
+    id: str  # node id: orchestrator|retriever|market_data|filings-analyst|market-context|aggregate|gate|synthesizer
     status: NodeStatus
     detail: str = ""
 

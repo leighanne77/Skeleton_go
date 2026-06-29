@@ -34,9 +34,10 @@ governed-agent-skeleton/
 │  ├─ orchestrator.py         # plans + routes (the supervisor)
 │  ├─ agents/                 # the SWAPPABLE worker layer
 │  │  ├─ retriever.py         #   retrieval-as-a-TOOL (not the spine)
-│  │  ├─ specialist_a.py
-│  │  ├─ specialist_b.py
-│  │  └─ synthesizer.py       #   writes the answer in ONE place, ONLY on the gate's pass edge
+│  │  ├─ embeddings.py        #   the embedding-model seam
+│  │  ├─ analysts.py          #   PROPOSE: two parallel analyst agents (filings-analyst ‖ market-context)
+│  │  ├─ llm.py               #   cross-family clients: Claude (generator) + OpenAI (judge)
+│  │  └─ synthesizer.py       #   DISPOSE: writes the answer in ONE place, ONLY on the gate's pass edge
 │  ├─ guardrails.py           # deterministic hard rules (PII via Presidio, schema, permitted-use)
 │  ├─ eval/                   # the control plane's points engine
 │  │  ├─ gate.py              #   CONTROL-PLANE GATE: deterministic floor → stage-2 support → rubric judge
@@ -86,7 +87,7 @@ governed-agent-skeleton/
 - **The spec-driven set sits at the root on purpose.** Claude Code auto-loads `CLAUDE.md`; `design.md`/`tasks.md`/`requirements.md`/`KNOWN_ISSUES.md` are read by name. Rule config + context management + validation coverage are what govern output quality — putting them where the agent reads them is the point, not decoration.
 - **`app/` is the skeleton, and it maps 1:1 to the eight scored items** — orchestration (`orchestrator` + `agents/`), eval (`eval/`), embeddings/vector DB (`retriever.py` + `config.py`), memory (`memory.py`), guardrails (`guardrails.py`), audit (`audit.py`), UI (`ui/`), deployment (`.env` + `run.py`). A folder per rubric line.
 - **`policies/` is a separate data folder on purpose.** It's the *Policies* pillar of PACE — rules as data, swapped by the `POLICY_PACK` switch, with the same *Controls* (`guardrails.py`, `eval/`, `audit.py`) underneath. The folder boundary *is* the data-plane / control-plane split made visible on disk.
-- **The control-plane gate is `app/eval/gate.py`, not an agent.** The workers in `agents/` (retriever, two specialists, synthesizer) are swappable; the gate is the independent control node the synthesizer is reachable through only on the pass edge. (There is no `verifier.py` — that was the old name for this.)
+- **The control-plane gate is `app/eval/gate.py`, not an agent.** The workers in `agents/` (retriever, the two parallel analyst agents, synthesizer) are swappable; the gate is the independent control node the synthesizer is reachable through only on the pass edge. (There is no `verifier.py` — that was the old name for this.)
 - **`golden/` and `data/` are pinned snapshots** — reproducibility is a scored expectation; versioned corpus + eval set (not generated live) is the defensible posture.
 - **`docs/` keeps prose out of the code root** so the thing you screen-share reads as an engineered system, not a folder of mixed notes.
 

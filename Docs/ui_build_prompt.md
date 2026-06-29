@@ -16,7 +16,7 @@
 > 6. An optional, collapsible **"audit / trace"** affordance for the demo (show the hash-chained record for the last answer) — present but out of the non-technical user's way.
 > 7. **Two modes, one app, one run (required):**
 >    - **Customer view (default)** — everything in requirements 1–6: plain language, the two answer states, citations, identity banner. No graph, no internals.
->    - **Operator view (toggle)** — a *glass box* for the technical reviewer: the **orchestration graph** (orchestrator → retriever-tool → specialists → control-plane gate → synthesizer) with each node's **status** (done / failed / withheld / unreachable) from the run trace (**rendered post-run** — see the build note below; live streaming is an optional stretch); the **gate's stages** (deterministic floor → support/entailment → rubric judge) with a pass/fail per stage; the retrieved chunks + scores; the **entitlement decision** (which sensitive classes were filtered for this principal); and the **audit chain** growing one row per step.
+>    - **Operator view (toggle)** — a *glass box* for the technical reviewer: the **orchestration graph** (orchestrator → retriever-tool + market-data → two parallel analyst agents → aggregate → control-plane gate → synthesizer) with each node's **status** (done / failed / withheld / unreachable) from the run trace (**rendered post-run** — see the build note below; live streaming is an optional stretch); the **gate's stages** (deterministic floor → support/entailment → rubric judge) with a pass/fail per stage; the retrieved chunks + scores; the **entitlement decision** (which sensitive classes were filtered for this principal); and the **audit chain** growing one row per step.
 >    - **Same backend, same events.** The Operator view is a *read-out of the actual execution* — driven by the LangGraph run state / callbacks, the eval-gate result object, and the audit log you already emit. **Never mock the graph or fake node states.** If a node or stage isn't wired to a real run, don't show it — you must be able to explain everything on screen. The toggle changes the *view*, never the run.
 >
 > **Deliverable:** propose **3–4 distinct UI options** (not just restyles — genuinely different interaction models), each with: a short description, an ASCII/wireframe sketch, what it's best at, what it trades off, and how it surfaces the two answer states + citations + identity. Then **recommend one** for a 2.5-hour live demo with a non-technical persona, and justify the pick. Keep the stack simple (Streamlit or Gradio for speed; React only if a richer layout earns it).
@@ -70,7 +70,9 @@
 
    orchestrator ●done
       └▶ retriever (tool) ●done    3 chunks   top = mnpi_dealbook  0.88
-      └▶ specialist: compliance ●done
+      ├▶ filings-analyst ●done   ┐ (two parallel analyst agents — propose)
+      └▶ market-context ●done    ┘
+      └▶ aggregate ●done    2 agents → 1 candidate
              ▼
    control-plane gate ●WITHHELD
       ├ deterministic floor    ✓ schema  ✓ span-exists  ✓ grounded
@@ -85,7 +87,7 @@
 
 ### Operator view — build it post-run, not as a live animation (do this)
 
-**Default approach.** Render the Operator view **once, after the run finishes**, from a captured trace object. The graph topology is **fixed** — orchestrator → retriever-tool → specialists → control-plane gate → synthesizer — so you do **not** need dynamic graph layout or real-time streaming. You draw the known nodes and **recolor them** from the trace. This is the cheap, robust build that survives Streamlit's rerun model and an architect's questions.
+**Default approach.** Render the Operator view **once, after the run finishes**, from a captured trace object. The graph topology is **fixed** — orchestrator → retriever-tool + market-data → two parallel analyst agents → aggregate → control-plane gate → synthesizer — so you do **not** need dynamic graph layout or real-time streaming. You draw the known nodes and **recolor them** from the trace. This is the cheap, robust build that survives Streamlit's rerun model and an architect's questions.
 
 **Why not live animation.** Streamlit reruns top-to-bottom on every interaction, so true node-by-node "lighting up" needs `st.fragment` / streaming / placeholder-mutation gymnastics that eat the build time you owe to the eval gate and guardrails. Post-run rendering gives ~95% of the "watch the graph form" effect for a fraction of the cost and risk. (Streamed step-by-step is a **stretch goal at the end**, never the plan.)
 
@@ -95,7 +97,9 @@
    RunTrace = {
      "nodes": [ {"id":"orchestrator","status":"done"},
                 {"id":"retriever","status":"done","detail":"3 chunks, top=mnpi_dealbook 0.88"},
-                {"id":"specialist_compliance","status":"done"},
+                {"id":"filings-analyst","status":"done"},
+                {"id":"market-context","status":"done"},
+                {"id":"aggregate","status":"done","detail":"2 agents → 1 candidate"},
                 {"id":"gate","status":"withheld"},
                 {"id":"synthesizer","status":"unreachable"} ],
      "gate_stages": [ {"name":"deterministic_floor","pass":true, "detail":"schema, span-exists, grounded"},
