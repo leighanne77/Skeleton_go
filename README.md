@@ -210,8 +210,18 @@ tipping-off-vs-Q&A and out-of-scope distinctions; Presidio NER for name/address 
 deterministic defaults keep the suite hermetic and the demo keyless.
 
 **Quality:** ruff + `mypy --strict` clean; **57 tests** (1 opt-in skipped); both
-verticals `validate_golden`-CLEAN; golden harness **pass@1 0.75** (all positives
-deliver; vertical signatures pass).
+verticals `validate_golden`-CLEAN; golden harness **pass@1 0.70 keyless / 0.80 keyed**
+(`financial_services`, 20 rows). **All 8 happy-path positives deliver in every config**;
+the misses are named negatives, not random failures, and they trace to two known
+limitations: (1) the keyword retriever has **no relevance floor** — off-corpus /
+out-of-scope queries return a weak top-k instead of empty, so the floor's empty-retrieval
+withhold never fires (`neg_empty_retrieval`, `neg_out_of_scope`; real embeddings route the
+latter, → 0.80); and (2) conflict-gating is deliberately **deferred to the NLI tier**
+(`neg_conflicting_sources` is flagged-not-gated). The lone support miss is
+`neg_unsupported_span`: the analysts quote spans verbatim, so a claim equals its own
+citation and stage-2 support is trivially satisfied — catching "related but
+non-responsive" needs a stricter relevance rubric. A retrieval relevance floor + tighter
+rubric are the two fixes.
 
 ---
 
