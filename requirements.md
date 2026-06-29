@@ -8,22 +8,24 @@
 ---
 
 ## R1 — Multi-agent orchestration *(scored, heaviest)*
-**Story:** As the architect, I want the work decomposed across an orchestrator, specialists, and an independent gate, so orchestration is real (delegation, routing, retry) — not one prompt in a trench coat.
+**Story:** As the architect, I want the work decomposed across an orchestrator, **multiple concurrent specialist agents**, and an independent gate, so orchestration is real (parallel delegation, routing, retry) — not one prompt in a trench coat.
 **Acceptance:**
-- WHEN a request arrives, THE SYSTEM SHALL route it through an **orchestrator** that delegates to a **retriever tool** and at least one **specialist** before any answer is formed.
-- THE SYSTEM SHALL place an **independent control-plane gate** between the specialists and the synthesizer.
+- WHEN a request arrives, THE SYSTEM SHALL route it through an **orchestrator** that delegates to a **retriever tool** and **at least two specialist agents running concurrently** (a real parallel fan-out) before any answer is formed.
+- THE SYSTEM SHALL have the concurrent agents **propose** cited findings only; a single **aggregate** SHALL union those findings into the one candidate the gate adjudicates (agents propose, the one synthesizer disposes).
+- THE SYSTEM SHALL place an **independent control-plane gate** between the agents and the synthesizer.
 - WHEN the gate fails AND retries remain, THE SYSTEM SHALL bounded-self-correct (default cap 2); WHEN retries are exhausted, THE SYSTEM SHALL withhold + escalate.
-- THE SYSTEM SHALL expose the orchestration as a graph (LangGraph), with the synthesizer reachable **only** on the gate's pass edge.
-*Verified by:* `test_synthesizer_unreachable_on_fail`, graph traversal review.
+- THE SYSTEM SHALL expose the orchestration as a graph (LangGraph), with the synthesizer reachable **only** on the gate's pass edge — the parallelism living strictly *upstream* of the gate so the invariant is untouched.
+*Verified by:* `test_synthesizer_unreachable_on_fail`, `test_traverses_orchestrator_through_parallel_agents_to_gate`, `test_analysts_diversify_across_sources`, graph traversal review.
 
 ## R2 — Eval-against-goal (the control-plane gate) *(scored)*
 **Story:** As the compliance owner, I want every answer evaluated against faithfulness **and** task-success before it can be delivered.
 **Acceptance:**
 - THE SYSTEM SHALL evaluate each candidate on **two axes** — faithfulness (grounded in cited spans) and task-success (answers the question) — and SHALL **gate, not merely record**.
 - THE SYSTEM SHALL run a **deterministic floor** (schema → citation-span existence → lexical grounding → completeness) BEFORE any model-judge stage.
+- THE SYSTEM SHALL run **stage-2 support as an independent cross-family judge** — a different model family from the generator (OpenAI judging Claude's claims), so a model never grades its own output unchecked — live when keyed, with a deterministic lexical fallback offline.
 - IF a claim's cited span does not entail the claim, THE SYSTEM SHALL mark it UNSUPPORTED and withhold.
 - THE SYSTEM SHALL evaluate against a **golden set** and report pass@1 + per-dimension judge-vs-gold agreement + negative-test results.
-*Verified by:* `test_rejects_unsupported_span`, golden harness run.
+*Verified by:* `test_rejects_unsupported_span`, `test_live_judge_is_used_when_enabled`, golden harness run.
 
 ## R3 — Embedding model *(scored — named + justified)*
 **Story:** As the architect, I want a named, justified embedding choice with an offline fallback.

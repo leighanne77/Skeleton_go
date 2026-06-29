@@ -10,8 +10,8 @@
 # ── orchestration & LLM ──────────────────────────────────────────────
 langgraph>=1,<2             # graph orchestration + checkpointer (session memory). 1.x: prebuilt/checkpoint split into sub-pkgs
 # langchain-core            # pulled in transitively by langgraph — let it resolve the compatible version (don't pin separately)
-anthropic>=0.40             # Claude — primary reasoning LLM (pin exact at install)
-openai>=1.50                # real embeddings (text-embedding-3-small) + cross-family judge — used when USE_REAL_EMBED=true
+anthropic>=0.40             # Claude — generator family: the parallel analyst agents (USE_REAL_LLM=true)
+openai>=1.50                # OpenAI — embeddings (text-embedding-3-small, USE_REAL_EMBED) + the cross-family stage-2 support judge (USE_REAL_LLM)
 
 # ── embeddings: keyless offline fallback (USE_REAL_EMBED=false) ───────
 sentence-transformers>=3.0  # local nomic-embed-text-v1.5 (768-dim); one-time model download at setup, then offline

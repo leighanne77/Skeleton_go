@@ -19,11 +19,18 @@ one codebase is the reusable-framework evidence.
 Most "ask the docs" demos hide the governance. Here the **control plane is the
 product**:
 
+- **Parallel agents propose; one synthesizer disposes.** Two analyst agents
+  (filings-analyst ‖ market-context) run as a real LangGraph fan-out and each propose a
+  cited finding; the gate adjudicates their union; a single writer finalizes the answer.
+  Multi-agent orchestration and defensibility are the *same* demo, not a trade-off.
 - **Two never-blurred states.** Every answer is either **DELIVERED** (with resolvable
   citations) or **ROUTED FOR HUMAN REVIEW** — never a confident guess.
 - **The synthesizer is reachable only on the gate's pass edge.** A failed/uncertain
   answer is *structurally* unable to reach the user (enforced by a LangGraph
   conditional edge; see `test_synthesizer_unreachable_on_fail`).
+- **An independent, cross-family judge.** The gate's stage-2 support is a *different*
+  model family (OpenAI) judging the Claude-generated claims — a model never grades its
+  own output unchecked — live when keyed, deterministic fallback offline.
 - **Entitlement-scoped retrieval.** A document tagged `[mnpi]` is invisible to an
   advisor who lacks `mnpi_cleared`. Flip the clearance and the *same* query goes from
   ROUTED to DELIVERED.
@@ -46,8 +53,17 @@ ticker / question
         │   embeddings + Chroma,            delayed/real-time quote,
         │   entitlement-filtered            never execution-grade
         │                │                           │
-        └────────► CONTROL-PLANE GATE ◄──────────────┘
+        │     ┌──────────┴──────────┐                │
+        │     ▼                     ▼                │   ← TWO PARALLEL ANALYST AGENTS
+        │  FILINGS-ANALYST   MARKET-CONTEXT          │     (real LangGraph fan-out;
+        │     │  (propose, cited findings)  │        │      Claude when keyed)
+        │     └──────────┬──────────┘                │
+        │                ▼                           │
+        │            AGGREGATE  ◄─────────────────────┘
+        │                │   (union the findings → one candidate)
+        └────────► CONTROL-PLANE GATE
                     deterministic floor → support → rubric
+                    (stage-2 support = live cross-family judge: OpenAI judges Claude)
                          │ pass                    │ fail / uncertain
                          ▼                          ▼
                    ONE SYNTHESIZER           WITHHELD → ROUTED
@@ -56,8 +72,13 @@ ticker / question
                          └──────► APPEND-ONLY, HASH-CHAINED AUDIT ◄──┘
 ```
 
-Retrieval is a **tool, not the spine**; the quote is non-citable context; the filing
-summary carries the resolvable citations the gate checks.
+**Parallel agents propose; the one synthesizer disposes.** Two analyst agents run
+*concurrently* upstream of the gate (real fan-out — measured ~2.6 s thread overlap),
+each grounding in a different source and emitting cited *findings*. The gate adjudicates
+their union; only then does the single synthesizer — reachable **only** on the pass edge —
+write the answer. Parallelism lives upstream of the gate, so the governance invariant
+(`test_synthesizer_unreachable_on_fail`) is untouched. Retrieval is a **tool, not the
+spine**; the quote is non-citable context; the filings carry the citations the gate checks.
 
 ---
 
@@ -121,10 +142,12 @@ app/
   agents/
     retriever.py   retrieval-as-a-tool: OpenAI embeddings + Chroma / keyword fallback
     embeddings.py  the embedding-model seam (text-embedding-3-small)
-    synthesizer.py specialist (top-K cited spans) + synthesizer (finalize, pass-edge only)
+    analysts.py    the PROPOSE layer: filings-analyst ‖ market-context (parallel fan-out)
+    llm.py         cross-family clients: Claude (generator) + OpenAI (judge), gated, fail-soft
+    synthesizer.py candidate draft (cited spans) + synthesizer (finalize, pass-edge only)
   eval/
     gate.py        the control-plane gate (floor → stage-2 support → rubric, fail-closed)
-    judge.py       support/relevance/conflict (deterministic; LLM/NLI tier behind the calls)
+    judge.py       support (live cross-family OpenAI judge / lexical fallback) · relevance · conflict
     harness.py     runs the golden answer key through the pipeline → pass@1 + mismatches
   tools/
     market_data.py quote tool — fixture / Alpha Vantage / Finnhub, ticker-agnostic
@@ -177,12 +200,16 @@ final validation + the plain-language one-pager (`Docs/one_pager.md`).
 
 **The three-pillar moat is real:** guardrails ✓ · eval-against-goal ✓ · tamper-evident audit ✓.
 
-**Production tiers (documented seams, swap-in behind the same calls):** the
-cross-family LLM / NLI judge for stage-2 support + strict rubric; an intent classifier
-for the tipping-off-vs-Q&A and out-of-scope distinctions; Presidio NER for name/address
-PII. The deterministic defaults keep the suite hermetic and the demo keyless.
+**Live now:** a **cross-family LLM judge** (OpenAI) at stage-2 support, judging the
+Claude-generated claims, and **two parallel analyst agents** (Claude) upstream of the
+gate — both live when keyed, deterministic fallback offline.
 
-**Quality:** ruff + `mypy --strict` clean; **49 tests** (1 opt-in skipped); both
+**Production tiers (documented seams, swap-in behind the same calls):** a DeBERTa-class
+**NLI** judge + strict rubric to deepen stage-2 support; an intent classifier for the
+tipping-off-vs-Q&A and out-of-scope distinctions; Presidio NER for name/address PII. The
+deterministic defaults keep the suite hermetic and the demo keyless.
+
+**Quality:** ruff + `mypy --strict` clean; **57 tests** (1 opt-in skipped); both
 verticals `validate_golden`-CLEAN; golden harness **pass@1 0.75** (all positives
 deliver; vertical signatures pass).
 

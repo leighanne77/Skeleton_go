@@ -14,7 +14,8 @@ import pytest
 
 from app.agents import analysts, llm
 from app.eval import judge
-from app.models import RetrievedChunk
+from app.models import AgentState, Principal, RetrievedChunk, RunRequest
+from app.orchestrator import _GRAPH, _final_state
 
 _CHUNKS = [
     RetrievedChunk(
@@ -89,3 +90,27 @@ def test_live_judge_is_used_when_enabled(monkeypatch: pytest.MonkeyPatch) -> Non
     assert judge.judge_mode() == "cross-family LLM (openai)"
     monkeypatch.setattr(judge.llm, "openai_text", lambda system, prompt: "YES")
     assert judge.supports("anything", "totally different claim") is True
+
+
+def test_parallel_findings_merge_in_graph_state() -> None:
+    """The crux of 'real parallel': both analyst agents' writes must SURVIVE in
+    AgentState.findings via the reducer. If the merge were last-writer-wins, only one
+    agent would appear — so this is the test that fails if the fan-out isn't real."""
+    req = RunRequest(
+        query="What standard governs broker-dealer recommendations to retail customers?",
+        principal=Principal(user_id="t", entitlements=[]),
+        policy_pack="financial_services_us",
+    )
+    state = _final_state(_GRAPH.invoke(AgentState(request=req)))
+    agents = {f.agent for f in state.findings}
+    assert agents == {
+        "filings-analyst",
+        "market-context",
+    }  # BOTH concurrent writes kept
+    assert len(state.findings) >= 2
+
+
+def test_llm_clients_disabled_in_hermetic_env() -> None:
+    # conftest forces both families off → the keyless contract holds (deterministic paths)
+    assert llm.anthropic_enabled() is False
+    assert llm.openai_enabled() is False

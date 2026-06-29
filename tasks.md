@@ -80,6 +80,11 @@ Run the 4-step validation across the whole suite. Produce the **plain-language o
 - **Satisfies:** all (esp. R7) · **Design:** §8
 - **Acceptance:** ruff + mypy clean; full `tests/` green; app runtime-verified; UI visually validated (both states); one-pager passes the "would a non-technical buyer get it?" read.
 
+## T12 — Rebuild: real parallel analyst agents + live cross-family judge
+Replace the single sequential specialist with **two concurrent analyst agents** feeding the gate (recruiter feedback: orchestrate several agents in parallel). Build `app/agents/analysts.py` (`filings-analyst` ‖ `market-context`, each scoped to a different source, each emitting a cited `Finding`) + `app/agents/llm.py` (cross-family clients: Claude generator, OpenAI judge — gated on `USE_REAL_LLM` + key, fail-soft to deterministic). Add a reducer field `AgentState.findings` (`Annotated[list, operator.add]`) so the parallel nodes write concurrently; wire `orchestrate → {retrieve, market_data} → {filings_analyst ‖ market_context} → aggregate → gate` in `app/orchestrator.py`. Upgrade `app/eval/judge.py::supports` to call the **live cross-family OpenAI judge** when keyed (lexical fallback) + expose `judge_mode()`. **Keep the invariant:** ONE synthesizer on the gate's conditional pass edge — parallelism strictly upstream — so `test_synthesizer_unreachable_on_fail` is unchanged. Update the operator glass-box (analyst nodes + aggregate + live-judge tier) + the stub topology.
+- **Satisfies:** R1 (multi-agent, heaviest) + R2 (cross-family judge) · **Design:** §1 topology + rebuild note, §10 · **Doc:** `Docs/Defense_And_Rebuild.md`
+- **Acceptance:** `test_traverses_orchestrator_through_parallel_agents_to_gate`, `test_each_analyst_emits_a_grounded_finding`, `test_analysts_diversify_across_sources`, `test_live_judge_is_used_when_enabled` pass; `test_synthesizer_unreachable_on_fail` still passes; analyst thread-overlap empirically confirmed (~2.6 s); conftest forces both LLM families off (hermetic); full suite green (57 passed, 1 skipped); ruff + mypy --strict clean.
+
 ---
 
 ## Test → requirement map (the acceptance matrix)
@@ -98,6 +103,10 @@ Run the 4-step validation across the whole suite. Produce the **plain-language o
 | `test_empty_retrieval_withholds` | R12 | T6 |
 | `test_conflicting_sources` | R12 | T6 |
 | `test_synthesizer_unreachable_on_fail` | R1 | T3 |
+| `test_traverses_orchestrator_through_parallel_agents_to_gate` | R1 | T12 |
+| `test_each_analyst_emits_a_grounded_finding` | R1 | T12 |
+| `test_analysts_diversify_across_sources` | R1 | T12 |
+| `test_live_judge_is_used_when_enabled` | R2 | T12 |
 | `test_vertical_signature_negative` | R10 (+ vertical Rv) | T7 |
 | `test_entitled_user_gets_<class>` | R10 (+ vertical Rv) | T7 |
 | `test_detector_data_alignment` | R6, R10 | T7 |
@@ -106,6 +115,7 @@ Run the 4-step validation across the whole suite. Produce the **plain-language o
 ---
 
 ## Version history
+v1.3 · SKELETON — 2026-06-29 · added **T12 — rebuild: real parallel analyst agents + live cross-family judge** (recruiter feedback: orchestrate several agents in parallel, not one sequential assistant). Two concurrent analyst agents (`filings-analyst` ‖ `market-context`) propose cited findings → `aggregate` → gate; the single synthesizer stays on the pass edge (invariant intact). Stage-2 support is now a live cross-family OpenAI judge (lexical fallback). Four new tests added to the acceptance matrix (`test_traverses_orchestrator_through_parallel_agents_to_gate`, `test_each_analyst_emits_a_grounded_finding`, `test_analysts_diversify_across_sources`, `test_live_judge_is_used_when_enabled`). Mirrors `design.md` rev11, `requirements.md` R1/R2, `Docs/Defense_And_Rebuild.md`.
 v1.2 · SKELETON — 2026-06-17 · added **T4b — market-data tool** (the BFSI stock-briefing quote source: offline JSON-fixture default + key-gated delayed-quote live adapter, `no_realtime_quote` guardrail, quote-worker + filings-summarizer-worker) with three tool-level tests added to the acceptance matrix (`test_quote_tool_offline_deterministic`, `test_stale_quote_labeled`, `test_realtime_quote_routes`). T0.5's financial_services data now also carries the briefing corpus (MRB 10-K/10-Q/8-K) + golden rows (17, CLEAN). Mirrors `design.md §12/§12a` + pack v2.2.
 v1.1 · SKELETON — 2026-06-16 · changed: **moved the golden *data* early** — inserted **T0.5 (Golden dataset + synthetic corpus)** between T0 and T1 to "define correct" before the feature build (negatives derive from the packs; positives hand-verified vs a synthetic corpus); **slimmed T10** from "golden set + harness" to **"Golden harness"** (runs the already-authored T0.5 set + calibration). Rest of the order (T1 UI → T9) unchanged. Mirrors `CLAUDE.md` / `design.md §9`.
 v3 · SKELETON — 2026-06-17 · **T1 now builds the dual-mode UI** — a Customer/Operator toggle over the same run: Customer view (plain, default) + Operator view (glass box: orchestration graph with per-node status, gate stages, entitlement decision, audit chain), driven by the real run trace (never mocked); acceptance + say-it + R1-legibility updated.

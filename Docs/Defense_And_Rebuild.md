@@ -129,10 +129,13 @@ orchestrate ┤            ├→ ┌─ filings-analyst ──┐
 - **✓ Operator glass-box** (`ui/`) renders the fan-out (two analyst nodes + aggregate)
   and the live-judge tier; stub topology updated to match.
 
-- **✓ Suite green.** 55 passed, 1 skipped · `ruff` + `ruff format` clean · `mypy --strict`
+- **✓ Suite green.** 57 passed, 1 skipped · `ruff` + `ruff format` clean · `mypy --strict`
   clean. New tests: `test_traverses_orchestrator_through_parallel_agents_to_gate`,
   `test_each_analyst_emits_a_grounded_finding`, `test_analysts_diversify_across_sources`,
-  `test_live_judge_is_used_when_enabled`, + the preserved invariant test.
+  `test_live_judge_is_used_when_enabled`,
+  **`test_parallel_findings_merge_in_graph_state`** (the crux — both concurrent writes
+  must survive the reducer in real graph state; fails if the fan-out is last-writer-wins),
+  `test_llm_clients_disabled_in_hermetic_env`, + the preserved invariant test.
 
 ### Note — the gate genuinely gates (a feature, not a bug)
 On the **keyless/deterministic** path both flagship queries DELIVER (2 agents · 2
