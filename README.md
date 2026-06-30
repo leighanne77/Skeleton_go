@@ -1,4 +1,4 @@
-# Governed Advisor Stock-Briefing (BFSI)
+# Governed Advisor Stock-Briefing (BFSI), reusable (skeleton)
 
 A **governed decision agent over regulated documents**: it helps a wealth-management
 advisor get up to speed on a stock — a clearly time-stamped **quote** plus the key
